@@ -8,3 +8,6 @@ set the right paths for audio files in the config files first
 ## train a modell
 after feature extraction
 * python main.py -c config/train.ini
+
+## Requirements
+- muda package for data augmentation (pip install muda)
