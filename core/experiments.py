@@ -17,7 +17,7 @@ from multiprocessing import Manager
 import numpy as np
 import time, gc
 import cProfile
-from core.metrics import TrainingDataMetric
+from core.metrics import DataSetMetric
 import matplotlib.pyplot as plt
 
 
@@ -173,6 +173,11 @@ class TrainModel(BaseExperiment):
         fit_params = self.get_fit_params()
         batch_size = FLAGS.batch_size
         self._logger.info("train: %d test: %d", ds.get_train_size(), ds.get_test_size())
+        cbs = fit_params['callbacks'] or []
+        for cb in cbs:
+            if isinstance(cb, DataSetMetric):
+                cb.set_train(ds)
+        print('DataSet shape:', ds.get_shape())
         if ds.is_generator():
             if FLAGS.generator_params is not None:
                 generator_params = self.get_generator_params()
@@ -187,10 +192,6 @@ class TrainModel(BaseExperiment):
             x_train, y_train = ds.get_train()
             x_val, y_val = ds.get_test()
             print(x_train.shape, y_train.shape)
-            cbs = fit_params['callbacks'] or []
-            for cb in cbs:
-                if isinstance(cb, TrainingDataMetric):
-                    cb.set_train(x_train, y_train)
             keras_model.fit(x_train, y_train, batch_size=batch_size, validation_data=(x_val, y_val), **fit_params)
 
         if FLAGS.m_path is not None:

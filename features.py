@@ -53,11 +53,21 @@ class MelSpectogramm(FeatureExtractor):
     def get_parser(self) -> ArgumentParser:
         parser = ArgumentParser("MelSpectogramm")
         parser.add_argument('--sampling_rate',
-                            type=int, default=44100)
+                            type=int)
         parser.add_argument('--duration',
-                            type=int, default=2)
+                            type=int)
         parser.add_argument('--n_mels',
-                            type=int, default=128)
+                            type=int)
+        parser.add_argument('--hop_length',
+                            type=int)
+        parser.add_argument('--fmin',
+                            type=int)
+        parser.add_argument('--fmax',
+                            type=int)
+        parser.add_argument('--n_fft',
+                            type=int)
+        parser.add_argument('--samples',
+                            type=int)
         return parser
 
     def get_df(self, ds: DataSet) -> pd.DataFrame:
@@ -66,14 +76,6 @@ class MelSpectogramm(FeatureExtractor):
     def extract(self, ds: DataSet, output: dict):
         FLAGS = self.params
         # Preprocessing settings
-        sampling_rate = FLAGS.sampling_rate
-        duration = FLAGS.duration
-        FLAGS.hop_length = 347 * FLAGS.duration  # to make time steps 128
-        FLAGS.fmin = 20
-        FLAGS.fmax = sampling_rate // 2
-        n_mels = FLAGS.n_mels
-        FLAGS.n_fft = n_mels * 20
-        FLAGS.samples = sampling_rate * duration
         df = self.get_df(ds)
         n = df.shape[0]
         i = 1
@@ -81,7 +83,7 @@ class MelSpectogramm(FeatureExtractor):
         for idx, row in df.iterrows():
             progress = i / n
             ellapsed_time = (time() - t0) / 60
-            print("Progress: {:.3f} Time left: {:.1f}".format(progress, (1 - progress) / progress * ellapsed_time),
+            print("Progress: {:.3f} Time left: {:.1f} min".format(progress, (1 - progress) / progress * ellapsed_time),
                   end='\r')
             ms = self.read_as_melspectrogram(FLAGS, row['path'], True)
             output[row['fname']] = ms

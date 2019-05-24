@@ -1,5 +1,6 @@
 import configparser
 from core.base_classes import ParserAble, DataSet
+from db_reader import AugmentedDataset
 from abc import abstractmethod
 from tensorflow.python.keras.models import Model
 import sys, logging
@@ -8,28 +9,33 @@ import numpy as np
 from sklearn.metrics import label_ranking_average_precision_score
 
 
-class TrainingDataMetric():
-    def set_train(self, x, y=None):
-        self.x_train = x
-        self.y_train = y
+class DataSetMetric():
+    def set_train(self, ds: DataSet):
+        self.ds = ds
 
 
-class MultiClassMetrics(keras.callbacks.Callback, TrainingDataMetric):
+class MultiClassMetrics(keras.callbacks.Callback, DataSetMetric):
 
     def on_train_begin(self, logs={}):
         self._data = []
+        if isinstance(self.ds, AugmentedDataset):
+            self.x_val, self.y_val = self.ds.get_test_data()
+            self.x_train, self.y_train = self.ds.get_train_data()
+        else:
+            self.x_val, self.y_val = self.ds.get_test()
+            self.x_train, self.y_train = self.ds.get_train()
 
     def on_epoch_end(self, batch, logs={}):
-        X_val, y_val = self.validation_data[0], self.validation_data[1]
         model = self.model
-        y_val_predict = np.asarray(model.predict(X_val))
-        y_train_predict = np.asarray(model.predict(self.x_train))
+
+        y_val_predict = np.asarray(model.predict(self.x_val, verbose=0))
+        y_train_predict = np.asarray(model.predict(self.x_train, verbose=0))
 
         self._data.append({
-            'val_LRAP': label_ranking_average_precision_score(y_val, y_val_predict)
+            'val_LRAP': label_ranking_average_precision_score(self.y_val, y_val_predict)
             , 'LRAP': label_ranking_average_precision_score(self.y_train, y_train_predict)
         })
-        print(self._data[-1])
+        print("\n", self._data[-1])
         return
 
     def get_data(self):
