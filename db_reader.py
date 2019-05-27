@@ -72,6 +72,9 @@ class MelSpectogramm(DataSet):
         self.y_train = y_train
         self.x_test = x_test
         self.y_test = y_test
+        if FLAGS.label_smoothing is not None:
+            self.y_train *= (1 - 2 * FLAGS.label_smoothing)
+            self.y_train += FLAGS.label_smoothing
 
     def load_npz(self, features, labels):
         x, y = None, None
@@ -91,6 +94,8 @@ class MelSpectogramm(DataSet):
         parser = ArgumentParser(description='MelSpectogramm')
         parser.add_argument('--test_size',
                             type=float, default=.1)
+        parser.add_argument('--label_smoothing',
+                            type=float)
         parser.add_argument('--features',
                             type=str, required=True)
         parser.add_argument('--labels',

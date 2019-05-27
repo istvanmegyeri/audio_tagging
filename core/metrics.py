@@ -24,6 +24,9 @@ class MultiClassMetrics(keras.callbacks.Callback, DataSetMetric):
         else:
             self.x_val, self.y_val = self.ds.get_test()
             self.x_train, self.y_train = self.ds.get_train()
+        self.y_train = np.array(self.y_train, copy=True)
+        self.y_train[self.y_train > 0.5] = 1
+        self.y_train[self.y_train < 0.5] = 0
 
     def on_epoch_end(self, batch, logs={}):
         model = self.model
