@@ -19,8 +19,8 @@ Numerous machine learning & signal processing approaches have been evaluated on 
 
 | <sub>Title</sub> | <sub>DataSet</sub> | <sub>Notes</sub> | <sub>val_LRAP</sub> | <sub>Paper</sub> | <sub>Code</sub> |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| <sub>**LeNet (BaseLine)**</sub> | <sub>**Mel-spectrogram(train_curated)**</sub> | <sub> CNN + binary_crossentropy<br /> probably overfitted, thought the training data is not enough representative</sub> | <sub>0.5 (77 epoch)</sub> | <sub>[LeCun1998](http://vision.stanford.edu/cs598_spring07/papers/Lecun98.pdf)</sub> |  |
-| <sub>**LeNet (BaseLine)**</sub> | <sub>**Mel-spectrogram(train_curated)+Featurewise standardization**</sub> | <sub> CNN + binary_crossentropy<br /> probably overfitted, thought the training data is not enough representative</sub> | <sub>0.5 (47 epoch)</sub> | <sub>[LeCun1998](http://vision.stanford.edu/cs598_spring07/papers/Lecun98.pdf)</sub> |  |
+| <sub>**EnvNet (BaseLine)**</sub> | <sub>**Mel-spectrogram(train_curated)**</sub> | <sub> CNN + binary_crossentropy<br /> probably overfitted, thought the training data is not enough representative</sub> | <sub>0.5 (77 epoch)</sub> | <sub>[LeCun1998](http://vision.stanford.edu/cs598_spring07/papers/Lecun98.pdf)</sub> |  |
+| <sub>**EnvNet (BaseLine)**</sub> | <sub>**Mel-spectrogram(train_curated)+Featurewise center & standardization**</sub> | <sub> CNN + binary_crossentropy<br /> probably overfitted, thought the training data is not enough representative</sub> | <sub>0.51 (31 epoch)</sub> | <sub>[piczak2015b](http://karol.piczak.com/papers/Piczak2015-ESC-ConvNet.pdf)</sub> |  |
 
 ## Requirements
 - muda package for data augmentation (pip install muda)
