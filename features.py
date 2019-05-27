@@ -7,6 +7,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from core.base_classes import FeatureExtractor, DataSet
 from time import time
+from concurrent.futures import ProcessPoolExecutor
 
 
 class FileSize(FeatureExtractor):
@@ -80,15 +81,24 @@ class MelSpectogramm(FeatureExtractor):
         n = df.shape[0]
         i = 1
         t0 = time()
+        tp = ProcessPoolExecutor(max_workers=4)
+        results = []
         for idx, row in df.iterrows():
-            progress = i / n
-            ellapsed_time = (time() - t0) / 60
-            print("Progress: {:.3f} Time left: {:.1f} min".format(progress, (1 - progress) / progress * ellapsed_time),
-                  end='\r')
-            ms = self.read_as_melspectrogram(FLAGS, row['path'], True)
-            output[row['fname']] = ms
+            f = tp.submit(self.extract_single, t0, FLAGS, row['path'], row['fname'], i, n)
+            results += [f]
             i += 1
+        for r in results:
+            ms, fname = r.result()
+            output[fname] = ms
         print("")
+
+    def extract_single(self, t0, FLAGS, path, fname, i, n):
+        progress = i / n
+        ellapsed_time = (time() - t0) / 60
+        print("Progress: {:.3f} Time left: {:.1f} min".format(progress, (1 - progress) / progress * ellapsed_time),
+              end='\r')
+        ms = self.read_as_melspectrogram(FLAGS, path, True)
+        return ms, fname
 
     def read_audio(self, conf, pathname, trim_long_data):
         y, sr = librosa.load(pathname, sr=conf.sampling_rate)
@@ -105,15 +115,15 @@ class MelSpectogramm(FeatureExtractor):
             y = np.pad(y, (offset, conf.samples - len(y) - offset), 'constant')
         return y
 
-    def audio_to_melspectrogram(self, conf, audio):
-        spectrogram = librosa.feature.melspectrogram(audio,
+    def audio_to_melspectrogram(self, conf, spect):
+        spectrogram = librosa.feature.melspectrogram(S=spect,
                                                      sr=conf.sampling_rate,
                                                      n_mels=conf.n_mels,
                                                      hop_length=conf.hop_length,
                                                      n_fft=conf.n_fft,
                                                      fmin=conf.fmin,
                                                      fmax=conf.fmax)
-        spectrogram = librosa.power_to_db(spectrogram)
+        spectrogram = librosa.power_to_db(np.abs(spectrogram) ** 2)
         spectrogram = spectrogram.astype(np.float32)
         return spectrogram
 
@@ -127,6 +137,7 @@ class MelSpectogramm(FeatureExtractor):
 
     def read_as_melspectrogram(self, conf, pathname, trim_long_data, debug_display=False):
         x = self.read_audio(conf, pathname, trim_long_data)
+        x = librosa.stft(x, n_fft=conf.n_fft, hop_length=conf.hop_length, center=False)
         mels = self.audio_to_melspectrogram(conf, x)
         if debug_display:
             # IPython.display.display(IPython.display.Audio(x, rate=conf.sampling_rate))

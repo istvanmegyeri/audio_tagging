@@ -17,16 +17,17 @@ class FnameReader(DataSet):
         super(FnameReader, self).__init__(config, args, False)
         FLAGS = self.params
         fnames = glob(FLAGS.audio_path)
-        df = pd.read_csv(FLAGS.label_fname)
         path_df = pd.DataFrame(data={'path': fnames})
         path_df['fname'] = path_df['path'].apply(lambda r: os.path.basename(r))
-        merged = df.merge(path_df, left_on='fname', right_on='fname')
-        self.x_train = merged
+        if FLAGS.label_fname is not None:
+            df = pd.read_csv(FLAGS.label_fname)
+            path_df = df.merge(path_df, left_on='fname', right_on='fname')
+        self.x_train = path_df
 
     def get_parser(self) -> ArgumentParser:
         parser = ArgumentParser(description='FnameReader')
         parser.add_argument('--label_fname',
-                            type=str, required=True)
+                            type=str)
         parser.add_argument('--audio_path',
                             type=str, required=True)
         return parser
@@ -61,20 +62,30 @@ class MelSpectogramm(DataSet):
     def __init__(self, config: configparser.ConfigParser, args) -> None:
         super().__init__(config, args, False)
         FLAGS = self.params
-        x_train = np.load(FLAGS.features)['arr_0']
-        x_train = x_train.reshape(x_train.shape + (1,))
-        y_train = np.load(FLAGS.labels)['arr_0']
-        x_train, x_test, y_train, y_test = train_test_split(x_train, y_train, random_state=9, test_size=FLAGS.test_size)
-        if FLAGS.noisy_features is not None and FLAGS.noisy_labels is not None:
-            x_train_noisy = np.load(FLAGS.noisy_features)['arr_0']
-            x_train_noisy = x_train_noisy.reshape(x_train_noisy.shape + (1,))
-            y_train_noisy = np.load(FLAGS.noisy_labels)['arr_0']
-            x_train = np.concatenate((x_train_noisy, x_train), axis=0)
-            y_train = np.concatenate((y_train_noisy, y_train), axis=0)
+        x_train, y_train = self.load_npz(FLAGS.features, FLAGS.labels)
+        if FLAGS.val_features is not None and FLAGS.val_labels is not None:
+            x_test, y_test = self.load_npz(FLAGS.val_features, FLAGS.val_labels)
+        else:
+            x_train, x_test, y_train, y_test = train_test_split(x_train, y_train, random_state=9,
+                                                                test_size=FLAGS.test_size)
         self.x_train = x_train
         self.y_train = y_train
         self.x_test = x_test
         self.y_test = y_test
+
+    def load_npz(self, features, labels):
+        x, y = None, None
+        for f_fname, l_fname in zip(features.split(","), labels.split(",")):
+            tmp_x = np.load(f_fname)['arr_0']
+            tmp_y = np.load(l_fname)['arr_0']
+            if x is None:
+                x = tmp_x
+                y = tmp_y
+            else:
+                x = np.concatenate((x, tmp_x), axis=0)
+                y = np.concatenate((y, tmp_y), axis=0)
+        x = x.reshape(x.shape + (1,))
+        return x, y
 
     def get_parser(self) -> ArgumentParser:
         parser = ArgumentParser(description='MelSpectogramm')
@@ -84,9 +95,9 @@ class MelSpectogramm(DataSet):
                             type=str, required=True)
         parser.add_argument('--labels',
                             type=str, required=True)
-        parser.add_argument('--noisy_features',
+        parser.add_argument('--val_features',
                             type=str)
-        parser.add_argument('--noisy_labels',
+        parser.add_argument('--val_labels',
                             type=str)
         return parser
 

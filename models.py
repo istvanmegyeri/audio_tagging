@@ -140,20 +140,26 @@ class ESCConvNet(BaseModel):
         m = self.create_model(**{'input_shape': input_shape, **vars(self.params)})
         return m
 
-    def create_model(self, input_shape, nb_classes, **kwargs):
+    def create_model(self, input_shape, nb_classes, dropout, **kwargs):
         model = Sequential()
         n_filters = 100
+        dropout = list(map(float, dropout.split(",")))
+        if len(dropout) == 1:
+            dropout = dropout * 4
+        if len(dropout) != 4:
+            raise Exception("Unexpected length of dropouts:{0}".format(len(dropout)))
         layers = [
             Conv2D(filters=n_filters, kernel_size=(57, 6), input_shape=input_shape, activation='relu'),
             MaxPool2D((4, 3), strides=(1, 3)),
-            Dropout(0.5),
+            Dropout(dropout[0]),
             Conv2D(filters=n_filters, kernel_size=(1, 4), activation='relu'),
             MaxPool2D((1, 3), strides=(1, 3)),
+            Dropout(dropout[1]),
             Flatten(),
             Dense(5000, activation='relu'),
-            Dropout(0.5),
+            Dropout(dropout[2]),
             Dense(5000, activation='relu'),
-            Dropout(0.5),
+            Dropout(dropout[3]),
             Dense(nb_classes, activation='sigmoid')
         ]
         add_regularization(layers, kwargs)
@@ -166,5 +172,6 @@ class ESCConvNet(BaseModel):
         parser.add_argument('--nb_classes', required=True, type=int)
         parser.add_argument('--regularizer', type=str)
         parser.add_argument('--regularizer.l', type=float)
+        parser.add_argument('--dropout', type=str)
 
         return parser
