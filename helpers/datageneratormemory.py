@@ -78,7 +78,7 @@ class DataGeneratorMemory(keras.utils.Sequence):
 
     def __len__(self):
         'Denotes the number of batches per epoch'
-        return int(np.floor(len(self.list_objs)))
+        return int(np.floor(len(self.list_objs),4))
 
     def __getitem__(self, index):
         # Generate indexes of the batch
@@ -96,7 +96,7 @@ class DataGeneratorMemory(keras.utils.Sequence):
     def __data_generation(self, index):
         'Generates data containing batch_size samples' # X : (n_samples, *dim, n_channels)
         # Initialization
-        X = np.empty((self.batch_size, dim[0], self.compressed_size, self.n_channels))
+        X = np.empty((self.batch_size, self.dim[0], self.compressed_size, self.n_channels))
         Y = np.zeros((self.batch_size,self.n_classes), dtype=int)
         sr = 22050
         for i in range(self.batch_size):
