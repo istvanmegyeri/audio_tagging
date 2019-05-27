@@ -17,3 +17,20 @@ class data_downloader:
     
   def delete(self):
     bashCommand = "rm -f "+self.filename
+    os.system(bashCommand)
+    
+  def load_compressed(self):
+    full_data = []
+    for i in range(1,11):
+      temp = np.load('data/data_c'+str(i)+'.npz')
+      B= np.split(temp['arr_0'], np.where(temp['arr_0'][:]== 200)[0][1:])
+      for wave in B:
+        if(wave.size > 10):
+          full_data.append(wave[1:]) 
+        
+    return full_data
+  
+#downloader = data_downloader("1_oY3xeJsaZOXqikNn1aAbiX4SOZ2KZHR", "data.zip") #curated compressed
+#downloader.download()
+#downloader.unzip()
+#downloader.delete()
