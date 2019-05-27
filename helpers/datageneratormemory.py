@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import glob
 import librosa.display
 import numpy as np
+from augmenter import *
 
 class DataGeneratorMemory(keras.utils.Sequence):
     'Generates data for Keras'
