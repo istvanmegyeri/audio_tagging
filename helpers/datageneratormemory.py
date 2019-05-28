@@ -14,25 +14,11 @@ import librosa.display
 import numpy as np
 import keras
 from helpers.augmenter import *
-from core.base_classes import ParserAble
-import configparser
 
 
-class DataGeneratorMemory(keras.utils.Sequence, ParserAble):
-    'Generates data for Keras'
+class DataGeneratorMemory(keras.utils.Sequence):
 
-    def get_parser(self) -> ArgumentParser:
-        parser = ArgumentParser(description='DataGeneratorMemory')
-        parser.add_argument('--raw_audio',
-                            type=str, required=True)
-        parser.add_argument('--labels',
-                            type=str, required=True)
-        return parser
-
-    def __init__(self, list_objs, labels, **kwargs):
-        self.initialize(list_objs, labels, kwargs)
-
-    def initialize(self, list_objs, labels, batch_size=32, dim=(60, 77), n_channels=1,
+    def __init__(self, list_objs, labels, batch_size=32, dim=(60, 77), n_channels=1,
                    n_classes=80, shuffle=True, speedchange_sigma=2.0, pitchchange_sigma=3.0,
                    noise_sigma=0.001):
         batch_size = 32
@@ -103,12 +89,6 @@ class DataGeneratorMemory(keras.utils.Sequence, ParserAble):
         self.comp_mat = comp_mat
         self.on_epoch_end()
 
-    def __init__(self, config: configparser.ConfigParser, args) -> None:
-        super(ParserAble, self).__init__(config, args, True)
-        FLAGS = self.params
-        list_objs, labels = None, None
-        self.initialize(list_objs, labels)
-
     def __len__(self):
         'Denotes the number of batches per epoch'
         return int(np.floor(len(self.list_objs), self.inner_batch_size))
@@ -148,8 +128,8 @@ class DataGeneratorMemory(keras.utils.Sequence, ParserAble):
             center1 = np.random.randint(0, signal1.size)
             center2 = np.random.randint(0, signal2.size)
             # crop a proper sized window
-            signal1 = self.crop_wav(signal1, center1)
-            signal2 = self.crop_wav(signal2, center2)
+            signal1 = self.crop_wav(signal1, center1, sr)
+            signal2 = self.crop_wav(signal2, center2, sr)
             r = np.random.uniform(0.0,1.0,1)
             signal = combine(signal1, signal2, r)
             signal = np.expand_dims(signal, axis=0)
@@ -164,7 +144,7 @@ class DataGeneratorMemory(keras.utils.Sequence, ParserAble):
 
         return X, Y
 
-    def crop_wav(self,signal, center):
+    def crop_wav(self,signal, center, sr):
         if (center >= self.halflen and center + self.halflen < signal.size):
             signal = signal[0, center - self.halflen:center + self.halflen]
         elif(center < self.halflen and center + self.halflen < signal.size):
