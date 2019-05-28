@@ -46,6 +46,7 @@ class DataGeneratorMemory(keras.utils.Sequence, ParserAble):
         'Initialization'
         self.dim = dim
         self.batch_size = batch_size
+        self.inner_batch_size = self.batch_size*2
         self.labels = labels
         self.list_objs = list_objs
         self.n_channels = n_channels
@@ -100,7 +101,6 @@ class DataGeneratorMemory(keras.utils.Sequence, ParserAble):
             col += 1
             row += 3
         self.comp_mat = comp_mat
-
         self.on_epoch_end()
 
     def __init__(self, config: configparser.ConfigParser, args) -> None:
@@ -111,11 +111,11 @@ class DataGeneratorMemory(keras.utils.Sequence, ParserAble):
 
     def __len__(self):
         'Denotes the number of batches per epoch'
-        return int(np.floor(len(self.list_objs), 4))
+        return int(np.floor(len(self.list_objs), self.inner_batch_size))
 
     def __getitem__(self, index):
         # Generate indexes of the batch
-        indexes = self.indexes[index * self.batch_size:(index + 1) * self.batch_size]
+        indexes = self.indexes[index * self.inner_batch_size:(index + 1) * self.inner_batch_size]
         # Generate data
         X, y = self.__data_generation(indexes)
         return X, y
@@ -126,37 +126,32 @@ class DataGeneratorMemory(keras.utils.Sequence, ParserAble):
         if self.shuffle == True:
             np.random.shuffle(self.indexes)
 
-    def __data_generation(self, index):
+    def __data_generation(self, indexes):
         'Generates data containing batch_size samples'  # X : (n_samples, *dim, n_channels)
         # Initialization
         X = np.empty((self.batch_size, self.dim[0], self.compressed_size, self.n_channels))
         Y = np.zeros((self.batch_size, self.n_classes), dtype=int)
         sr = 22050
         for i in range(self.batch_size):
-            signal = self.list_objs[index[i]]
+            signal1 = self.list_objs[indexes[i*2]]
+            signal2 = self.list_objs[indexes[i*2+1]]
             # augment
-            signal = add_noise(
-                change_speed(change_pitch(signal, sr, self.pitchchange_sigma), sr, self.speedchange_sigma), sr,
+            signal1 = add_noise(
+                change_speed(change_pitch(signal1, sr, self.pitchchange_sigma), sr, self.speedchange_sigma), sr,
                 self.noise_sigma)
-            signal = np.expand_dims(signal, axis=0)
+            signal2 = add_noise(
+                change_speed(change_pitch(signal2, sr, self.pitchchange_sigma), sr, self.speedchange_sigma), sr,
+                self.noise_sigma)
+            signal1 = np.expand_dims(signal1, axis=0)
+            signal2 = np.expand_dims(signal2, axis=0)
             # pick random center location
-            center = np.random.randint(0, signal.size)
+            center1 = np.random.randint(0, signal1.size)
+            center2 = np.random.randint(0, signal2.size)
             # crop a proper sized window
-            if (center >= self.halflen and center + self.halflen < signal.size):
-                signal = signal[0, center - self.halflen:center + self.halflen]
-            elif (center < self.halflen and center + self.halflen < signal.size):
-                signal = np.concatenate((add_noise(np.zeros((1, self.halflen - center)), sr, self.noise_sigma),
-                                         signal[0, :center + self.halflen]), None)
-            elif (center >= self.halflen and center + self.halflen > signal.size):
-                signal = np.concatenate((signal[0, center - self.halflen:],
-                                         add_noise(np.zeros((1, self.halflen - signal.size + center)), sr,
-                                                   self.noise_sigma)), None)
-            elif (center < self.halflen and center + self.halflen > signal.size):
-                signal = np.concatenate((add_noise(np.zeros((1, self.halflen - center)), sr, self.noise_sigma),
-                                         signal[0, :],
-                                         add_noise(np.zeros((1, self.halflen - signal.size + center)), sr,
-                                                   self.noise_sigma)), None)
-
+            signal1 = self.crop_wav(signal1, center1)
+            signal2 = self.crop_wav(signal2, center2)
+            r = np.random.uniform(0.0,1.0,1)
+            signal = combine(signal1, signal2, r)
             signal = np.expand_dims(signal, axis=0)
             signal = np.expand_dims(signal, axis=1)
             a = self.model.predict(signal)
@@ -164,6 +159,24 @@ class DataGeneratorMemory(keras.utils.Sequence, ParserAble):
             cD = np.expand_dims(cD, axis=2)
             X[i,] = cD
             # Store class
-            Y[i, self.labels[index[i]]] = 1
+            Y[i, self.labels[indexes[i*2]]] = r*1.0
+            Y[i, self.labels[indexes[i*2+1]]] = (1.0-r)*1.0
 
         return X, Y
+
+    def crop_wav(self,signal, center):
+        if (center >= self.halflen and center + self.halflen < signal.size):
+            signal = signal[0, center - self.halflen:center + self.halflen]
+        elif(center < self.halflen and center + self.halflen < signal.size):
+            signal = np.concatenate((add_noise(np.zeros((1, self.halflen - center)), sr, self.noise_sigma),
+                                     signal[0, :center + self.halflen]), None)
+        elif(center >= self.halflen and center + self.halflen > signal.size):
+            signal = np.concatenate((signal[0, center - self.halflen:],
+                                     add_noise(np.zeros((1, self.halflen - signal.size + center)), sr,
+                                               self.noise_sigma)), None)
+        elif(center < self.halflen and center + self.halflen > signal.size):
+            signal = np.concatenate((add_noise(np.zeros((1, self.halflen - center)), sr, self.noise_sigma),
+                                     signal[0, :],
+                                     add_noise(np.zeros((1, self.halflen - signal.size + center)), sr,
+                                               self.noise_sigma)), None)
+        return signal
