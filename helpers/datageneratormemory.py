@@ -52,6 +52,7 @@ class DataGeneratorMemory(keras.utils.Sequence):
                                       return_decibel_melgram=False, trainable_fb=False,
                                       trainable_kernel=False,
                                       name='trainable_stft'))
+        self.model.add(Normalization2D(str_axis='batch'))
         self.model.compile('adam', 'categorical_crossentropy')
         comp3col = ((2 * n - 2) // 3) * 3
         comp2col = n + 1
