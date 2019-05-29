@@ -1,11 +1,12 @@
 from core.base_classes import BaseModel
-from tensorflow.python.keras.models import Sequential, Model
-from tensorflow.python.keras.layers import Dense, Activation, Flatten, Input, InputLayer, Conv2D, AveragePooling2D, \
+from keras.models import Sequential, Model
+from keras.layers import Dense, Activation, Flatten, Input, InputLayer, Conv2D, AveragePooling2D, \
     Reshape, \
     Dot, Add, Dropout, MaxPool2D
 from argparse import ArgumentParser
-from tensorflow.python.keras import regularizers
-from tensorflow.python.keras import initializers
+from keras import regularizers
+from keras import initializers
+from kapre.utils import Normalization2D
 
 
 def add_regularization(layers, params):
@@ -149,7 +150,8 @@ class ESCConvNet(BaseModel):
         if len(dropout) != 4:
             raise Exception("Unexpected length of dropouts:{0}".format(len(dropout)))
         layers = [
-            Conv2D(filters=n_filters, kernel_size=(57, 6), input_shape=input_shape, activation='relu'),
+            Normalization2D(str_axis='batch', input_shape=input_shape),
+            Conv2D(filters=n_filters, kernel_size=(57, 6), activation='relu'),
             MaxPool2D((4, 3), strides=(1, 3)),
             Dropout(dropout[0]),
             Conv2D(filters=n_filters, kernel_size=(1, 4), activation='relu'),

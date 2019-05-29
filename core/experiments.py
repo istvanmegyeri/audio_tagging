@@ -2,9 +2,7 @@ from core.base_classes import BaseModel, BaseExperiment, DataSet, FeatureExtract
 from argparse import ArgumentParser
 from core import util
 from core.object_holders import SectionCloner
-from tensorflow.python.keras.models import Model
 import tensorflow as tf
-from tensorflow.python import keras as tf_keras
 import logging
 import pandas as pd
 from sklearn.model_selection import GridSearchCV
@@ -186,9 +184,10 @@ class TrainModel(BaseExperiment):
             train_dg = ds.get_train()
             test_dg = ds.get_test()
             keras_model.fit_generator(generator=train_dg,
-                                      steps_per_epoch=ds.get_train_size() // batch_size,
+                                      # steps_per_epoch=ds.get_train_size() // batch_size,
                                       validation_data=test_dg,
-                                      validation_steps=ds.get_test_size() // batch_size, **fit_params)
+                                      # validation_steps=ds.get_test_size() // batch_size,
+                                      **fit_params)
         else:
             x_train, y_train = ds.get_train()
             x_val, y_val = ds.get_test()

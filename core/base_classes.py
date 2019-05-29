@@ -2,11 +2,11 @@ from abc import ABC, abstractmethod
 import configparser
 from core import util
 from argparse import ArgumentParser
-from tensorflow.python.keras.models import Model
+from keras.models import Model
 from matplotlib import colors
 import numpy as np
 import logging
-from tensorflow.python.keras.preprocessing.image import NumpyArrayIterator
+from keras.preprocessing.image import NumpyArrayIterator
 
 
 class ParserAble(ABC):
@@ -156,7 +156,7 @@ class DataSet(ParserAble):
         y = np.zeros((n,) + batches[0][1].shape[1:])
         batch_size = batches[0][1].shape[0]
         x = np.zeros((n,) + batches[0][0].shape[1:])
-        for i in range(0, int(np.ceil(n / batch_size))):
+        for i in range(0, n // batch_size):
             x[i * batch_size:(i + 1) * batch_size] = np.array(batches[i][0])
             y[i * batch_size:(i + 1) * batch_size] = np.array(batches[i][1])
         return x, y

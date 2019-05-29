@@ -7,8 +7,9 @@ import sys, os
 from sklearn.model_selection import train_test_split
 from core.base_classes import DataSet
 from core import util as core_util
-from tensorflow.python.keras.preprocessing.image import ImageDataGenerator
+from keras.preprocessing.image import ImageDataGenerator
 import h5py
+from helpers.datageneratormemory import DataGeneratorMemory
 
 
 class FnameReader(DataSet):
@@ -205,33 +206,37 @@ class RawData(DataSet):
         FLAGS = self.params
         h5f_features = h5py.File(FLAGS.features, 'r')
         h5f_labels = h5py.File(FLAGS.labels, 'r')
-        print(h5f_features.values())
-        self.x_train = list(h5f_features.values())
-        self.y_train = list(h5f_labels.values())
+        self.x_train = list(map(lambda x: x.value, list(h5f_features.values())))
+        self.y_train = list(map(lambda x: x.value, list(h5f_labels.values())))
         self.x_train, self.x_test, self.y_train, self.y_test = train_test_split(self.x_train, self.y_train,
                                                                                 random_state=9,
                                                                                 test_size=FLAGS.test_size)
-
+        self.labels_train = list(map(lambda r: np.argwhere(r == 1).reshape(-1), self.y_train))
+        self.labels_test = list(map(lambda r: np.argwhere(r == 1).reshape(-1), self.y_test))
+        self.train_dg = DataGeneratorMemory(self.x_train, self.labels_train, batch_size=FLAGS.batch_size)
+        self.test_dg = DataGeneratorMemory(self.x_test, self.labels_test, batch_size=FLAGS.batch_size)
 
     def get_train(self):
-        return None
+        return self.train_dg
 
     def get_test(self):
-        return None
+        return self.test_dg
 
     def get_shape(self):
         return (60, 77, 1)
 
     def get_train_size(self) -> int:
-        return len(self.x_train)
+        return len(self.x_train) // 2
 
     def get_test_size(self) -> int:
-        return len(self.x_test)
+        return len(self.x_test) // 2
 
     def get_parser(self) -> ArgumentParser:
         parser = ArgumentParser(description='RawData')
         parser.add_argument('--test_size',
                             type=float, default=.1)
+        parser.add_argument('--batch_size',
+                            type=int, default=32)
         parser.add_argument('--features',
                             type=str, required=True)
         parser.add_argument('--labels',
