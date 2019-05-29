@@ -19,6 +19,7 @@ import time, gc
 import cProfile
 from core.metrics import DataSetMetric
 import matplotlib.pyplot as plt
+import h5py
 
 
 class EvaluateModel(BaseExperiment):
@@ -214,6 +215,12 @@ class ExtractFeatures(BaseExperiment):
         parser.add_argument('--npz',
                             action='store_true'
                             )
+        parser.add_argument('--h5',
+                            action='store_true'
+                            )
+        parser.add_argument('--compress',
+                            action='store_true'
+                            )
         return parser
 
     def get_dataset(self) -> DataSet:
@@ -236,7 +243,19 @@ class ExtractFeatures(BaseExperiment):
         items = sorted(output.items())
         keys, values = zip(*items)
         if FLAGS.npz:
-            np.savez_compressed(FLAGS.out_fname, list(values))
+            if FLAGS.compress:
+                np.savez_compressed(FLAGS.out_fname, list(values))
+            else:
+                np.savez(FLAGS.out_fname, list(values))
+        elif FLAGS.h5:
+            print("save file")
+            h5f = h5py.File(FLAGS.out_fname, 'w')
+            n = len(keys)
+            for idx, (k, v) in enumerate(zip(keys, values)):
+                print('Progress: {:.3f}'.format((idx + 1) / n), end='\r')
+                h5f.create_dataset(k, data=v)
+            print("")
+            h5f.close()
         else:
             pd.DataFrame(values).to_csv(FLAGS.out_fname, index=False, sep=';')
 

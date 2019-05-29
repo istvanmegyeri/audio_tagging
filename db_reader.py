@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 from core.base_classes import DataSet
 from core import util as core_util
 from tensorflow.python.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.python.keras.preprocessing.image import NumpyArrayIterator
+import h5py
 
 
 class FnameReader(DataSet):
@@ -195,20 +195,46 @@ class AugmentedDataset(DataSet):
         flow_FLAGS, remaining_argv = self.get_flow_parser().parse_known_args(self.get_sec_params(FLAGS.train_params))
         return self.train_dg.flow(x_train, y_train, **vars(flow_FLAGS))
 
-    def get_train_data(self):
-        return self.get_generator_data(self.get_train(), self.get_train_size())
-
-    def get_test_data(self):
-        return self.get_generator_data(self.get_test(), self.get_test_size())
-
-    def get_generator_data(self, batches: NumpyArrayIterator, n):
-        y = np.zeros((n,) + batches[0][1].shape[1:])
-        batch_size = batches[0][1].shape[0]
-        x = np.zeros((n,) + batches[0][0].shape[1:])
-        for i in range(0, int(np.ceil(n / batch_size))):
-            x[i * batch_size:(i + 1) * batch_size] = np.array(batches[i][0])
-            y[i * batch_size:(i + 1) * batch_size] = np.array(batches[i][1])
-        return x, y
-
     def get_train_size(self) -> int:
         return self.get_db_reader().get_train_size()
+
+
+class RawData(DataSet):
+    def __init__(self, config: configparser.ConfigParser, args) -> None:
+        super().__init__(config, args, True)
+        FLAGS = self.params
+        h5f_features = h5py.File(FLAGS.features, 'r')
+        h5f_labels = h5py.File(FLAGS.labels, 'r')
+        print(h5f_features.values())
+        self.x_train = list(h5f_features.values())
+        self.y_train = list(h5f_labels.values())
+        self.x_train, self.x_test, self.y_train, self.y_test = train_test_split(self.x_train, self.y_train,
+                                                                                random_state=9,
+                                                                                test_size=FLAGS.test_size)
+
+
+    def get_train(self):
+        return None
+
+    def get_test(self):
+        return None
+
+    def get_shape(self):
+        return (60, 77, 1)
+
+    def get_train_size(self) -> int:
+        return len(self.x_train)
+
+    def get_test_size(self) -> int:
+        return len(self.x_test)
+
+    def get_parser(self) -> ArgumentParser:
+        parser = ArgumentParser(description='RawData')
+        parser.add_argument('--test_size',
+                            type=float, default=.1)
+        parser.add_argument('--features',
+                            type=str, required=True)
+        parser.add_argument('--labels',
+                            type=str, required=True)
+
+        return parser

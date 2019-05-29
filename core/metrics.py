@@ -18,12 +18,8 @@ class MultiClassMetrics(keras.callbacks.Callback, DataSetMetric):
 
     def on_train_begin(self, logs={}):
         self._data = []
-        if isinstance(self.ds, AugmentedDataset):
-            self.x_val, self.y_val = self.ds.get_test_data()
-            self.x_train, self.y_train = self.ds.get_train_data()
-        else:
-            self.x_val, self.y_val = self.ds.get_test()
-            self.x_train, self.y_train = self.ds.get_train()
+        self.x_val, self.y_val = self.ds.get_test_data()
+        self.x_train, self.y_train = self.ds.get_train_data()
         self.y_train = np.array(self.y_train, copy=True)
         self.y_train[self.y_train > 0.5] = 1
         self.y_train[self.y_train < 0.5] = 0
