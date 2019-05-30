@@ -1,8 +1,7 @@
 import configparser
 from argparse import ArgumentParser
 from core.base_classes import ParserAble
-from tensorflow.python.keras.models import Model
-from tensorflow.python import keras as tf_keras
+from keras.models import Model
 import keras
 from core.base_classes import ObjectHolder
 from core import util
@@ -98,7 +97,7 @@ class KerasModelLoader(ModelLoader):
         return parser
 
     def get_model(self) -> Model:
-        m = tf_keras.models.load_model(self.params.filepath)
+        m = keras.models.load_model(self.params.filepath)
         return m
 
     def get_path(self):

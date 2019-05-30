@@ -2,10 +2,11 @@ from abc import ABC, abstractmethod
 import configparser
 from core import util
 from argparse import ArgumentParser
-from tensorflow.python.keras.models import Model
+from keras.models import Model
 from matplotlib import colors
 import numpy as np
 import logging
+from keras.preprocessing.image import NumpyArrayIterator
 
 
 class ParserAble(ABC):
@@ -140,6 +141,25 @@ class DataSet(ParserAble):
     @abstractmethod
     def get_test(self):
         pass
+
+    def get_train_data(self):
+        if self.is_generator():
+            return self.get_generator_data(self.get_train(), self.get_train_size())
+        return self.get_train()
+
+    def get_test_data(self):
+        if self.is_generator():
+            return self.get_generator_data(self.get_test(), self.get_test_size())
+        return self.get_test()
+
+    def get_generator_data(self, batches: NumpyArrayIterator, n):
+        y = np.zeros((n,) + batches[0][1].shape[1:])
+        batch_size = batches[0][1].shape[0]
+        x = np.zeros((n,) + batches[0][0].shape[1:])
+        for i in range(0, n // batch_size):
+            x[i * batch_size:(i + 1) * batch_size] = np.array(batches[i][0])
+            y[i * batch_size:(i + 1) * batch_size] = np.array(batches[i][1])
+        return x, y
 
 
 class FeatureExtractor(ParserAble):

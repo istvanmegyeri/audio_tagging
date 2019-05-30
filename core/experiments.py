@@ -2,9 +2,7 @@ from core.base_classes import BaseModel, BaseExperiment, DataSet, FeatureExtract
 from argparse import ArgumentParser
 from core import util
 from core.object_holders import SectionCloner
-from tensorflow.python.keras.models import Model
 import tensorflow as tf
-from tensorflow.python import keras as tf_keras
 import logging
 import pandas as pd
 from sklearn.model_selection import GridSearchCV
@@ -19,6 +17,7 @@ import time, gc
 import cProfile
 from core.metrics import DataSetMetric
 import matplotlib.pyplot as plt
+import h5py
 
 
 class EvaluateModel(BaseExperiment):
@@ -185,9 +184,10 @@ class TrainModel(BaseExperiment):
             train_dg = ds.get_train()
             test_dg = ds.get_test()
             keras_model.fit_generator(generator=train_dg,
-                                      steps_per_epoch=ds.get_train_size() // batch_size,
+                                      # steps_per_epoch=ds.get_train_size() // batch_size,
                                       validation_data=test_dg,
-                                      validation_steps=ds.get_test_size() // batch_size, **fit_params)
+                                      # validation_steps=ds.get_test_size() // batch_size,
+                                      **fit_params)
         else:
             x_train, y_train = ds.get_train()
             x_val, y_val = ds.get_test()
@@ -214,6 +214,12 @@ class ExtractFeatures(BaseExperiment):
         parser.add_argument('--npz',
                             action='store_true'
                             )
+        parser.add_argument('--h5',
+                            action='store_true'
+                            )
+        parser.add_argument('--compress',
+                            action='store_true'
+                            )
         return parser
 
     def get_dataset(self) -> DataSet:
@@ -236,7 +242,19 @@ class ExtractFeatures(BaseExperiment):
         items = sorted(output.items())
         keys, values = zip(*items)
         if FLAGS.npz:
-            np.savez_compressed(FLAGS.out_fname, list(values))
+            if FLAGS.compress:
+                np.savez_compressed(FLAGS.out_fname, list(values))
+            else:
+                np.savez(FLAGS.out_fname, list(values))
+        elif FLAGS.h5:
+            print("save file")
+            h5f = h5py.File(FLAGS.out_fname, 'w')
+            n = len(keys)
+            for idx, (k, v) in enumerate(zip(keys, values)):
+                print('Progress: {:.3f}'.format((idx + 1) / n), end='\r')
+                h5f.create_dataset(k, data=v)
+            print("")
+            h5f.close()
         else:
             pd.DataFrame(values).to_csv(FLAGS.out_fname, index=False, sep=';')
 

@@ -20,11 +20,33 @@ class FileSize(FeatureExtractor):
 
     def extract(self, ds: DataSet, output: dict):
         df = self.get_df(ds)
+        feature_name = self.get_name()
         for idx, row in df.iterrows():
             fname = row['fname']
             stats = output.get(fname, {'fname': fname})
-            stats[self.get_name()] = os.path.getsize(row['path'])
+            stats[feature_name] = os.path.getsize(row['path'])
             output[fname] = stats
+
+
+class Duration(FeatureExtractor):
+
+    def get_parser(self) -> ArgumentParser:
+        return ArgumentParser('Duration')
+
+    def get_df(self, ds: DataSet) -> pd.DataFrame:
+        return ds.get_train()
+
+    def extract(self, ds: DataSet, output: dict):
+        df = self.get_df(ds)
+        n = df.shape[0]
+        feature_name = self.get_name()
+        for idx, row in df.iterrows():
+            fname = row['fname']
+            print('Progress: {:.3f}'.format((idx + 1) / n), end='\r')
+            stats = output.get(fname, {'fname': fname})
+            stats[feature_name] = librosa.core.get_duration(filename=row['path'])
+            output[fname] = stats
+        print("")
 
 
 class Label(FeatureExtractor):
@@ -143,3 +165,55 @@ class MelSpectogramm(FeatureExtractor):
             # IPython.display.display(IPython.display.Audio(x, rate=conf.sampling_rate))
             self.show_melspectrogram(conf, mels)
         return mels
+
+
+class RawAudio(FeatureExtractor):
+
+    def get_parser(self) -> ArgumentParser:
+        parser = ArgumentParser("RawAudio")
+        parser.add_argument('--sampling_rate',
+                            type=int, default=44100)
+        parser.add_argument('--trim_long_data',
+                            action='store_true')
+        parser.add_argument('--samples',
+                            type=int)
+        return parser
+
+    def get_df(self, ds: DataSet) -> pd.DataFrame:
+        return ds.get_train()
+
+    def extract(self, ds: DataSet, output: dict):
+        FLAGS = self.params
+        # Preprocessing settings
+        df = self.get_df(ds)
+        n = df.shape[0]
+        i = 1
+        t0 = time()
+        tp = ProcessPoolExecutor(max_workers=4)
+        results = []
+        for idx, row in df.iterrows():
+            f = tp.submit(self.extract_single, t0, FLAGS, row['path'], row['fname'], i, n)
+            results += [f]
+            i += 1
+        for r in results:
+            ms, fname = r.result()
+            output[fname] = ms
+        print("")
+
+    def extract_single(self, t0, FLAGS, path, fname, i, n):
+        progress = i / n
+        ellapsed_time = (time() - t0) / 60
+        print("Progress: {:.3f} Time left: {:.1f} min".format(progress, (1 - progress) / progress * ellapsed_time),
+              end='\r')
+        ms = self.read_audio(FLAGS, path)
+        return ms, fname
+
+    def read_audio(self, conf, pathname):
+        y, sr = librosa.load(pathname, sr=conf.sampling_rate)
+        # trim silence
+        if 0 < len(y):  # workaround: 0 length causes error
+            y, _ = librosa.effects.trim(y)  # trim, top_db=default(60)
+        # make it unified length to conf.samples
+        if conf.trim_long_data and len(y) > conf.samples:  # long enough
+            y = y[0:0 + conf.samples]
+        return y

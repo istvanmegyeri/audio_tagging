@@ -2,9 +2,9 @@ import configparser
 from core.base_classes import ParserAble, DataSet
 from db_reader import AugmentedDataset
 from abc import abstractmethod
-from tensorflow.python.keras.models import Model
+from keras.models import Model
 import sys, logging
-from tensorflow.python import keras
+import keras
 import numpy as np
 from sklearn.metrics import label_ranking_average_precision_score
 
@@ -18,15 +18,13 @@ class MultiClassMetrics(keras.callbacks.Callback, DataSetMetric):
 
     def on_train_begin(self, logs={}):
         self._data = []
-        if isinstance(self.ds, AugmentedDataset):
-            self.x_val, self.y_val = self.ds.get_test_data()
-            self.x_train, self.y_train = self.ds.get_train_data()
-        else:
-            self.x_val, self.y_val = self.ds.get_test()
-            self.x_train, self.y_train = self.ds.get_train()
+        self.x_val, self.y_val = self.ds.get_test_data()
+        self.x_train, self.y_train = self.ds.get_train_data()
         self.y_train = np.array(self.y_train, copy=True)
-        self.y_train[self.y_train > 0.5] = 1
+        self.y_train[self.y_train >= 0.5] = 1
         self.y_train[self.y_train < 0.5] = 0
+        self.y_val[self.y_val >= 0.5] = 1
+        self.y_val[self.y_val < 0.5] = 0
 
     def on_epoch_end(self, batch, logs={}):
         model = self.model
@@ -35,8 +33,8 @@ class MultiClassMetrics(keras.callbacks.Callback, DataSetMetric):
         y_train_predict = np.asarray(model.predict(self.x_train, verbose=0))
 
         self._data.append({
-            'val_LRAP': label_ranking_average_precision_score(self.y_val, y_val_predict)
-            , 'LRAP': label_ranking_average_precision_score(self.y_train, y_train_predict)
+            'val_LRAP': label_ranking_average_precision_score(self.y_val, y_val_predict),
+            'LRAP': label_ranking_average_precision_score(self.y_train, y_train_predict)
         })
         print("\n", self._data[-1])
         return
