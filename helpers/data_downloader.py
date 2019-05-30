@@ -1,5 +1,6 @@
 #import
 import os
+import numpy as np
 
 class data_downloader:
   def __init__(self, file_id, filename):
@@ -11,7 +12,8 @@ class data_downloader:
     os.system(bashCommand)
     
   def unzip(self):
-    !mkdir -p data
+    bashCommand = "mkdir -p data"
+    os.system(bashCommand)
     bashCommand = "unzip "+self.filename+" -d data/"
     os.system(bashCommand)
     
@@ -26,7 +28,16 @@ class data_downloader:
       B= np.split(temp['arr_0'], np.where(temp['arr_0'][:]== 200)[0][1:])
       for wave in B:
         if(wave.size > 10):
-          full_data.append(wave[1:]) 
+          full_data.append(wave[1:])
+
+  def load_compressed_windows(self, data_dir):
+    full_data = []
+    for i in range(1,11):
+      temp = np.load(data_dir+"\\data_c"+str(i)+'.npz')
+      B= np.split(temp['arr_0'], np.where(temp['arr_0'][:]== 200)[0][1:])
+      for wave in B:
+        if(wave.size > 10):
+          full_data.append(wave[1:])
         
     return full_data
   
