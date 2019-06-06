@@ -120,10 +120,12 @@ class DataGeneratorMemory(keras.utils.Sequence):
         signal = np.expand_dims(signal, axis=0)
         signal = self.crop_wav(signal, center, sr)
         # t0 = time()
-        # signal = change_pitch(signal, sr, self.pitchchange_sigma)
+        signal = change_pitch(signal, sr, self.pitchchange_sigma)
         # print("change_pitch:", time() - t0)
         # t0 = time()
-        # signal = change_speed(signal, sr, self.speedchange_sigma)
+        signal = change_speed(signal, sr, self.speedchange_sigma)
+        signal = np.expand_dims(signal, axis=0)
+        signal = self.crop_wav(signal, self.halflen, sr)
         # print("change_speed", time() - t0)
         t0 = time()
         signal = add_noise(signal, sr, self.noise_sigma)
@@ -145,8 +147,9 @@ class DataGeneratorMemory(keras.utils.Sequence):
             signal1 = self.augment(signal1, sr, verbose=0)
             signal2 = self.augment(signal2, sr, verbose=0)
 
-            r = np.random.uniform(0.0, 1.0, 1)
-            signal = combine(signal1, signal2, r)
+            r1 = np.random.uniform(0.0, 1.0, 1)
+            r2 = np.random.uniform(0.0, 1.0, 1)
+            signal = combine(signal1, signal2, r1, r2)
             # signal = np.expand_dims(signal, axis=0)
             # signal = np.expand_dims(signal, axis=1)
             x = librosa.stft(signal, n_fft=self.n_fft, hop_length=self.hop_length, center=False)
@@ -160,9 +163,9 @@ class DataGeneratorMemory(keras.utils.Sequence):
             # @TODO: handle same class
             #print(self.labels[indexes[i * 2]])
             #print(Y[i, self.labels[indexes[i * 2]]])
-            Y[i, self.labels[indexes[i * 2]]] = r * 1.0
+            Y[i, self.labels[indexes[i * 2]]] = r1 * 1.0
             #print(Y[i, self.labels[indexes[i * 2]]])
-            Y[i, self.labels[indexes[i * 2 + 1]]] = (1.0 - r) * 1.0
+            Y[i, self.labels[indexes[i * 2 + 1]]] = r2 * 1.0
         return X, Y
 
     def audio_to_melspectrogram(self, spect):
@@ -171,7 +174,7 @@ class DataGeneratorMemory(keras.utils.Sequence):
                                                      n_mels=self.n_mels,
                                                      hop_length=self.hop_length,
                                                      n_fft=self.n_fft,
-                                                     fmin=0,
+                                                     fmin=100,
                                                      fmax=11025)
         spectrogram = librosa.power_to_db(np.abs(spectrogram) ** 2)
         spectrogram = spectrogram.astype(np.float32)
