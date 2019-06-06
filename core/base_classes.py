@@ -153,12 +153,16 @@ class DataSet(ParserAble):
         return self.get_test()
 
     def get_generator_data(self, batches: NumpyArrayIterator, n):
-        y = np.zeros((n,) + batches[0][1].shape[1:])
-        batch_size = batches[0][1].shape[0]
-        x = np.zeros((n,) + batches[0][0].shape[1:])
-        for i in range(0, n // batch_size):
-            x[i * batch_size:(i + 1) * batch_size] = np.array(batches[i][0])
-            y[i * batch_size:(i + 1) * batch_size] = np.array(batches[i][1])
+        first = batches[0]
+        y = np.zeros((n,) + first[1].shape[1:])
+        batch_size = first[1].shape[0]
+        x = np.zeros((n,) + first[0].shape[1:])
+        x[:batch_size] = np.array(first[0])
+        y[:batch_size] = np.array(first[1])
+        for i in range(1, n // batch_size):
+            batch = batches[i]
+            x[i * batch_size:(i + 1) * batch_size] = np.array(batch[0])
+            y[i * batch_size:(i + 1) * batch_size] = np.array(batch[1])
         return x, y
 
 

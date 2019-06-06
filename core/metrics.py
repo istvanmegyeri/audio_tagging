@@ -18,6 +18,7 @@ class MultiClassMetrics(keras.callbacks.Callback, DataSetMetric):
 
     def on_train_begin(self, logs={}):
         self._data = []
+        print("Load one epoch START")
         self.x_val, self.y_val = self.ds.get_test_data()
         self.x_train, self.y_train = self.ds.get_train_data()
         self.y_train = np.array(self.y_train, copy=True)
@@ -25,6 +26,7 @@ class MultiClassMetrics(keras.callbacks.Callback, DataSetMetric):
         self.y_train[self.y_train < 0.5] = 0
         self.y_val[self.y_val >= 0.5] = 1
         self.y_val[self.y_val < 0.5] = 0
+        print("Load one epoch DONE")
 
     def on_epoch_end(self, batch, logs={}):
         model = self.model

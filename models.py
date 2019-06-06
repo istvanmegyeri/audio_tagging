@@ -192,16 +192,21 @@ class VGG16(BaseModel):
         return m
 
     def create_model(self, input_shape, nb_classes, **kwargs):
-        model = keras_vgg(include_top=False, weights=None, input_shape=input_shape, classes=nb_classes)
-        # Classification block
-        model.add(Flatten())
-        model.add(Dense(4096, activation='relu', name='fc1'))
-        model.add(Dense(4096, activation='relu', name='fc2'))
-        model.add(Dense(nb_classes, activation='sigmoid', name='predictions'))
+        model = Sequential()
+        layers = [keras_vgg(include_top=False, weights=None, input_shape=input_shape),
+                  Flatten(),
+                  Dense(4096, activation='relu'),
+                  Dense(4096, activation='relu'),
+                  Dense(nb_classes, activation='sigmoid')]
+        add_regularization(layers, kwargs)
+        for l in layers:
+            model.add(l)
         return model
 
     def get_parser(self) -> ArgumentParser:
         parser = ArgumentParser()
         parser.add_argument('--nb_classes', required=True, type=int)
+        parser.add_argument('--regularizer', type=str)
+        parser.add_argument('--regularizer.l', type=float)
 
         return parser

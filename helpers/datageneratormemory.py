@@ -21,18 +21,10 @@ from time import time
 
 class DataGeneratorMemory(keras.utils.Sequence):
 
-    def __init__(self, list_objs, labels, batch_size=32, dim=(60, 77), n_channels=1,
+    def __init__(self, list_objs, labels, batch_size=32,
+                 dim=(60, 77), n_channels=1,
                  n_classes=80, shuffle=True, speedchange_sigma=2.0, pitchchange_sigma=3.0,
                  noise_sigma=0.001):
-        batch_size = batch_size
-        dim = (60, 77)
-        n_channels = 1
-        n_classes = 80
-        shuffle = True
-        speedchange_sigma = 2.0
-        pitchchange_sigma = 3.0
-        noise_sigma = 0.001
-        'Initialization'
         self.dim = dim
         self.batch_size = batch_size
         self.inner_batch_size = self.batch_size * 2
@@ -119,19 +111,14 @@ class DataGeneratorMemory(keras.utils.Sequence):
         center = np.random.randint(0, signal.size)
         signal = np.expand_dims(signal, axis=0)
         signal = self.crop_wav(signal, center, sr)
-        # t0 = time()
-        signal = change_pitch(signal, sr, self.pitchchange_sigma)
-        # print("change_pitch:", time() - t0)
-        # t0 = time()
-        signal = change_speed(signal, sr, self.speedchange_sigma)
-        signal = np.expand_dims(signal, axis=0)
-        signal = self.crop_wav(signal, self.halflen, sr)
-        # print("change_speed", time() - t0)
-        t0 = time()
-        signal = add_noise(signal, sr, self.noise_sigma)
-        if verbose:
-            print("add_noise", time() - t0)
-
+        if self.pitchchange_sigma != 0:
+            signal = change_pitch(signal, sr, self.pitchchange_sigma)
+        if self.speedchange_sigma != 0:
+            signal = change_speed(signal, sr, self.speedchange_sigma)
+            signal = np.expand_dims(signal, axis=0)
+            signal = self.crop_wav(signal, self.halflen, sr)
+        if self.noise_sigma != 0:
+            signal = add_noise(signal, sr, self.noise_sigma)
         return signal
 
     def __data_generation(self, indexes):
@@ -161,10 +148,10 @@ class DataGeneratorMemory(keras.utils.Sequence):
             X[i,] = cD
             # Store class
             # @TODO: handle same class
-            #print(self.labels[indexes[i * 2]])
-            #print(Y[i, self.labels[indexes[i * 2]]])
+            # print(self.labels[indexes[i * 2]])
+            # print(Y[i, self.labels[indexes[i * 2]]])
             Y[i, self.labels[indexes[i * 2]]] = r1 * 1.0
-            #print(Y[i, self.labels[indexes[i * 2]]])
+            # print(Y[i, self.labels[indexes[i * 2]]])
             Y[i, self.labels[indexes[i * 2 + 1]]] = r2 * 1.0
         return X, Y
 
