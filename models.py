@@ -2,11 +2,12 @@ from core.base_classes import BaseModel
 from keras.models import Sequential, Model
 from keras.layers import Dense, Activation, Flatten, Input, InputLayer, Conv2D, AveragePooling2D, \
     Reshape, \
-    Dot, Add, Dropout, MaxPool2D
+    Dot, Add, Dropout, MaxPool2D, BatchNormalization
 from argparse import ArgumentParser
 from keras import regularizers
 from keras import initializers
 from kapre.utils import Normalization2D
+from keras.applications import VGG16 as keras_vgg
 
 
 def add_regularization(layers, params):
@@ -141,9 +142,9 @@ class ESCConvNet(BaseModel):
         m = self.create_model(**{'input_shape': input_shape, **vars(self.params)})
         return m
 
-    def create_model(self, input_shape, nb_classes, dropout, **kwargs):
+    def create_model(self, input_shape, nb_classes, n_filters, dropout, **kwargs):
         model = Sequential()
-        n_filters = 100
+
         dropout = list(map(float, dropout.split(",")))
         if len(dropout) == 1:
             dropout = dropout * 4
@@ -174,6 +175,29 @@ class ESCConvNet(BaseModel):
         parser.add_argument('--nb_classes', required=True, type=int)
         parser.add_argument('--regularizer', type=str)
         parser.add_argument('--regularizer.l', type=float)
+        parser.add_argument('--n_filters', type=int, default=100)
         parser.add_argument('--dropout', type=str)
+
+        return parser
+
+
+class VGG16(BaseModel):
+    def build(self, input_shape) -> Model:
+        print('###########', self.params)
+        m = self.create_model(**{'input_shape': input_shape, **vars(self.params)})
+        return m
+
+    def create_model(self, input_shape, nb_classes, **kwargs):
+        model = keras_vgg(include_top=False, weights=None, input_shape=input_shape, classes=nb_classes)
+        # Classification block
+        model.add(Flatten())
+        model.add(Dense(4096, activation='relu', name='fc1'))
+        model.add(Dense(4096, activation='relu', name='fc2'))
+        model.add(Dense(nb_classes, activation='sigmoid', name='predictions'))
+        return model
+
+    def get_parser(self) -> ArgumentParser:
+        parser = ArgumentParser()
+        parser.add_argument('--nb_classes', required=True, type=int)
 
         return parser

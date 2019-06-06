@@ -180,12 +180,14 @@ class TrainModel(BaseExperiment):
         if ds.is_generator():
             if FLAGS.generator_params is not None:
                 generator_params = self.get_generator_params()
-                # @TODO: merge fit and generator_params
+                fit_params = {**fit_params, **generator_params}
+                print("Fit_params:", fit_params)
             train_dg = ds.get_train()
             test_dg = ds.get_test()
             keras_model.fit_generator(generator=train_dg,
                                       # steps_per_epoch=ds.get_train_size() // batch_size,
                                       validation_data=test_dg,
+
                                       # validation_steps=ds.get_test_size() // batch_size,
                                       **fit_params)
         else:
