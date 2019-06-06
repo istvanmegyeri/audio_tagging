@@ -124,6 +124,7 @@ class DataGeneratorMemory(keras.utils.Sequence):
         # print("change_pitch:", time() - t0)
         # t0 = time()
         signal = change_speed(signal, sr, self.speedchange_sigma)
+        signal = np.expand_dims(signal, axis=0)
         signal = self.crop_wav(signal, self.halflen, sr)
         # print("change_speed", time() - t0)
         t0 = time()
