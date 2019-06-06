@@ -99,27 +99,3 @@ def bootstrap_recon_model_getter(noise_fraction):
                   loss_weights={'t': 1., 'recon': beta})
 
     return model, callbacks, trained, 'bootstrap_recon_model'
-
-
-def plot_results(noise_grid, accs_list, model_names, colours):
-    fig = plt.figure(figsize=(15, 5))
-    ax1 = fig.add_subplot(1, 3, 1)
-    for i, accs in enumerate(accs_list):
-        ax1.plot(noise_grid, accs, '-', color=colours[i])
-        ax1.plot(noise_grid, accs, 'o', markeredgecolor=colours[i], \
-                 markerfacecolor='None', label=model_names[i])
-    ax1.set_title('MNIST with random fixed label noise')
-    ax1.set_ylabel('Classification accuracy (%)')
-    ax1.set_xlabel('Noise fraction')
-    ax1.set_ylim(0.4, 1.0)
-    ax1.set_xlim(0.3, 0.5)
-    xleft, xright = ax1.get_xlim()
-    ybottom, ytop = ax1.get_ylim()
-    # the abs method is used to make sure that all numbers are positive
-    # because x and y axis of an axes maybe inversed.
-    ax1.set_aspect(abs((xright - xleft) / (ybottom - ytop)) * 1.0)
-    plt.legend(loc='lower left')
-    ax1.xaxis.set_major_formatter(FormatStrFormatter('%.2f'))
-
-
-plt.savefig('replicated_results.png')
