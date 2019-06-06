@@ -15,9 +15,8 @@ def change_speed(y, sr, speed_change):
 def add_noise(y, sr, sigma):
     return  y + np.random.normal(0.0, sigma, y.shape)
 
-def combine(x1, x2, r):
-    np.multiply( 1.0/np.max(x1) , x1 )
-    return np.multiply(r,np.multiply( 1.0/np.max(np.abs(x1)) , x1 ))+np.multiply(1.0-r,np.multiply( 1.0/np.max(np.abs(x2)) , x2 ))
+def combine(x1, x2, r1, r2):
+    return np.multiply(r1,np.multiply( 1.0/np.max(np.abs(x1)) , x1 ))+np.multiply(r2,np.multiply( 1.0/np.max(np.abs(x2)) , x2 ))
 
 def shift(y, sr, shift_sec, sigma=0.0005):
     shift_samples = shift_sec*sr

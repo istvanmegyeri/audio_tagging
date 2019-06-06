@@ -152,16 +152,16 @@ class ESCConvNet(BaseModel):
             raise Exception("Unexpected length of dropouts:{0}".format(len(dropout)))
         layers = [
             Normalization2D(str_axis='batch', input_shape=input_shape),
-            Conv2D(filters=n_filters, kernel_size=(57, 6), activation='relu'),
-            MaxPool2D((4, 3), strides=(1, 3)),
+            Conv2D(filters=n_filters, kernel_size=(6, 6), activation='relu'),
+            MaxPool2D((3, 3), strides=(1, 1)),
             Dropout(dropout[0]),
-            Conv2D(filters=n_filters, kernel_size=(1, 4), activation='relu'),
-            MaxPool2D((1, 3), strides=(1, 3)),
+            Conv2D(filters=n_filters, kernel_size=(3, 3), activation='relu'),
+            MaxPool2D((3, 3), strides=(1, 1)),
             Dropout(dropout[1]),
             Flatten(),
             Dense(5000, activation='relu'),
             Dropout(dropout[2]),
-            Dense(5000, activation='relu'),
+            Dense(1000, activation='relu'),
             Dropout(dropout[3]),
             Dense(nb_classes, activation='sigmoid')
         ]
