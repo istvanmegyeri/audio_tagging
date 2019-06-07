@@ -208,13 +208,20 @@ class RawData(DataSet):
         h5f_labels = h5py.File(FLAGS.labels, 'r')
         self.x_train = list(map(lambda x: x.value, list(h5f_features.values())))
         self.y_train = list(map(lambda x: x.value, list(h5f_labels.values())))
+        print("RawData: data is loaded")
         self.x_train, self.x_test, self.y_train, self.y_test = train_test_split(self.x_train, self.y_train,
                                                                                 random_state=9,
                                                                                 test_size=FLAGS.test_size)
         self.labels_train = list(map(lambda r: np.argwhere(r == 1).reshape(-1), self.y_train))
         self.labels_test = list(map(lambda r: np.argwhere(r == 1).reshape(-1), self.y_test))
-        self.train_dg = DataGeneratorMemory(self.x_train, self.labels_train, batch_size=FLAGS.batch_size)
-        self.test_dg = DataGeneratorMemory(self.x_test, self.labels_test, batch_size=FLAGS.batch_size)
+        traingenerator_params = {'batch_size': FLAGS.batch_size}
+        test_generator_params = {'batch_size': FLAGS.batch_size}
+        if FLAGS.train_generator_params is not None:
+            traingenerator_params = {**traingenerator_params, **self.get_generator_params(FLAGS.train_generator_params)}
+        if FLAGS.test_generator_params is not None:
+            test_generator_params = {**test_generator_params, **self.get_generator_params(FLAGS.test_generator_params)}
+        self.train_dg = DataGeneratorMemory(self.x_train, self.labels_train, **traingenerator_params)
+        self.test_dg = DataGeneratorMemory(self.x_test, self.labels_test, **test_generator_params)
 
     def get_train(self):
         return self.train_dg
@@ -241,5 +248,19 @@ class RawData(DataSet):
                             type=str, required=True)
         parser.add_argument('--labels',
                             type=str, required=True)
+        parser.add_argument('--train_generator_params',
+                            type=str, required=True)
+        parser.add_argument('--test_generator_params',
+                            type=str, required=True)
+        return parser
 
+    def get_generator_params(self, sec_name):
+        generator_params = self.get_generator_parser().parse_args(self.get_sec_params(sec_name))
+        return vars(generator_params)
+
+    def get_generator_parser(self) -> ArgumentParser:
+        parser = ArgumentParser(description='Generator')
+        parser.add_argument('--speedchange_sigma', type=float)
+        parser.add_argument('--pitchchange_sigma', type=float)
+        parser.add_argument('--noise_sigma', type=float)
         return parser

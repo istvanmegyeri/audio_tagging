@@ -187,7 +187,6 @@ class TrainModel(BaseExperiment):
             keras_model.fit_generator(generator=train_dg,
                                       # steps_per_epoch=ds.get_train_size() // batch_size,
                                       validation_data=test_dg,
-
                                       # validation_steps=ds.get_test_size() // batch_size,
                                       **fit_params)
         else:
