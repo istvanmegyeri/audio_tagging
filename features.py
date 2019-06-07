@@ -8,6 +8,8 @@ from matplotlib import pyplot as plt
 from core.base_classes import FeatureExtractor, DataSet
 from time import time
 from concurrent.futures import ProcessPoolExecutor
+import scipy
+from helpers.augmenter import change_speed, change_pitch
 
 
 class FileSize(FeatureExtractor):
@@ -197,7 +199,8 @@ class RawAudio(FeatureExtractor):
             i += 1
         for r in results:
             ms, fname = r.result()
-            output[fname] = ms
+            # 16-bit PCM -32768 +32767 int16
+            output[fname] = (ms * 32767).astype(np.int16)
         print("")
 
     def extract_single(self, t0, FLAGS, path, fname, i, n):
@@ -209,7 +212,7 @@ class RawAudio(FeatureExtractor):
         return ms, fname
 
     def read_audio(self, conf, pathname):
-        y, sr = librosa.load(pathname, sr=conf.sampling_rate, dtype=np.float16)
+        y, sr = librosa.load(pathname, sr=conf.sampling_rate, dtype=np.float32)
         # trim silence
         if 0 < len(y):  # workaround: 0 length causes error
             y, _ = librosa.effects.trim(y)  # trim, top_db=default(60)

@@ -1,6 +1,4 @@
 #!pip install kapre
-from argparse import ArgumentParser
-
 import kapre
 
 from keras.models import Sequential
@@ -35,7 +33,6 @@ class DataGeneratorMemory(keras.utils.Sequence):
         self.speedchange_sigma = speedchange_sigma
         self.pitchchange_sigma = pitchchange_sigma
         self.noise_sigma = noise_sigma
-        self.model = Sequential()
         self.list_objs = list_objs
         n = 10
         n_fft = 1024
@@ -45,6 +42,7 @@ class DataGeneratorMemory(keras.utils.Sequence):
         self.hop_length = 512
         self.sampling_rate = 22050
         self.n_mels = dim[0]
+        # self.model = Sequential()
         '''self.model.add(Melspectrogram(n_dft=1024, n_hop=512, input_shape=(1, self.raw_length),
                                       padding='same', sr=22050, n_mels=dim[0],
                                       fmin=0.0, fmax=22050 / 2, power_melgram=1.0,
@@ -128,8 +126,8 @@ class DataGeneratorMemory(keras.utils.Sequence):
         Y = np.zeros((self.batch_size, self.n_classes), dtype=np.float32)
         sr = 22050
         for i in range(self.batch_size):
-            signal1 = self.list_objs[indexes[i * 2]]
-            signal2 = self.list_objs[indexes[i * 2 + 1]]
+            signal1 = self.list_objs[indexes[i * 2]].astype(np.float32) / 32767
+            signal2 = self.list_objs[indexes[i * 2 + 1]].astype(np.float32) / 32767
             # augment
             signal1 = self.augment(signal1, sr, verbose=0)
             signal2 = self.augment(signal2, sr, verbose=0)

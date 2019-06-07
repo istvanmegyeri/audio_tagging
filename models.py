@@ -7,6 +7,7 @@ from argparse import ArgumentParser
 from keras import regularizers
 from keras import initializers
 from kapre.utils import Normalization2D
+from kapre.time_frequency import Melspectrogram
 from keras.applications import VGG16 as keras_vgg
 
 
@@ -152,20 +153,16 @@ class ESCConvNet(BaseModel):
             raise Exception("Unexpected length of dropouts:{0}".format(len(dropout)))
         layers = [
             Normalization2D(str_axis='batch', input_shape=input_shape),
-            Conv2D(filters=n_filters, kernel_size=(9, 9), activation='relu'),
-            MaxPool2D((2, 2), strides=(2, 2)),
+            Conv2D(filters=n_filters, kernel_size=(57, 6), activation='relu'),
+            MaxPool2D((4, 3), strides=(1, 3)),
             Dropout(dropout[0]),
-            Conv2D(filters=n_filters, kernel_size=(6, 6), activation='relu'),
-            Dropout(dropout[1]),
-            Conv2D(filters=n_filters, kernel_size=(3, 3), activation='relu'),
-            MaxPool2D((1, 2), strides=(1, 2)),
-            Dropout(dropout[1]),
-            Conv2D(filters=n_filters, kernel_size=(3, 3), activation='relu'),
+            Conv2D(filters=n_filters, kernel_size=(1, 4), activation='relu'),
+            MaxPool2D((1, 3), strides=(1, 3)),
             Dropout(dropout[1]),
             Flatten(),
-            Dense(1000, activation='relu'),
+            Dense(5000, activation='relu'),
             Dropout(dropout[2]),
-            Dense(1000, activation='relu'),
+            Dense(5000, activation='relu'),
             Dropout(dropout[3]),
             Dense(nb_classes, activation='sigmoid')
         ]

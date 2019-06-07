@@ -1,6 +1,7 @@
 from core.base_classes import ObjectHolder, ParserAble
 import configparser
 import logging, os
+import time
 
 _logger = logging.getLogger('util')
 
@@ -61,3 +62,10 @@ class ColorGen():
 
     def get(self, idx):
         return self.colors[idx % len(self.colors)]
+
+
+def print_progress(t0, i, n, msg=""):
+    progress = (i + 1) / n
+    ellapsed_time = (time.time() - t0) / 60
+    print("Progress: {:.3f} Time left: {:.1f} min\t".format(progress, (1 - progress) / progress * ellapsed_time), msg,
+          end='\r')

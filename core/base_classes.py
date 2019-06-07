@@ -7,6 +7,7 @@ from matplotlib import colors
 import numpy as np
 import logging
 from keras.preprocessing.image import NumpyArrayIterator
+from time import time
 
 
 class ParserAble(ABC):
@@ -159,10 +160,14 @@ class DataSet(ParserAble):
         x = np.zeros((n,) + first[0].shape[1:])
         x[:batch_size] = np.array(first[0])
         y[:batch_size] = np.array(first[1])
-        for i in range(1, n // batch_size):
+        t0 = time()
+        m = n // batch_size
+        for i in range(1, m):
+            util.print_progress(t0, i, m)
             batch = batches[i]
             x[i * batch_size:(i + 1) * batch_size] = np.array(batch[0])
             y[i * batch_size:(i + 1) * batch_size] = np.array(batch[1])
+        print("")
         return x, y
 
 

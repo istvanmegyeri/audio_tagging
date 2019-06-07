@@ -204,10 +204,21 @@ class RawData(DataSet):
     def __init__(self, config: configparser.ConfigParser, args) -> None:
         super().__init__(config, args, True)
         FLAGS = self.params
-        h5f_features = h5py.File(FLAGS.features, 'r')
-        h5f_labels = h5py.File(FLAGS.labels, 'r')
-        self.x_train = list(map(lambda x: x.value, list(h5f_features.values())))
-        self.y_train = list(map(lambda x: x.value, list(h5f_labels.values())))
+        if FLAGS.features.endswith(".h5"):
+            h5f_features = h5py.File(FLAGS.features, 'r')
+            h5f_labels = h5py.File(FLAGS.labels, 'r')
+            self.x_train = list(map(lambda x: x.value, list(h5f_features.values())))
+            self.y_train = list(map(lambda x: x.value, list(h5f_labels.values())))
+        else:
+            self.x_train = np.load(FLAGS.features)['arr_0']
+            self.y_train = np.load(FLAGS.labels)['arr_0']
+            for i in range(len(self.x_train)):
+                instance = self.x_train[i]
+                if np.isnan(instance).sum() > 1:
+                    print(i)
+                if np.isfinite(instance).min() < 1:
+                    print(i)
+
         print("RawData: data is loaded")
         self.x_train, self.x_test, self.y_train, self.y_test = train_test_split(self.x_train, self.y_train,
                                                                                 random_state=9,
