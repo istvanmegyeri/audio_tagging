@@ -29,7 +29,10 @@ class DataGeneratorMemory(keras.utils.Sequence):
         self.batch_size = batch_size
         self.inner_batch_size = self.batch_size * 2
         self.labels = labels
-        self.list_objs = list_objs
+        if(youRead):
+            self.list_objs = list(map(lambda x: x.value, list(list_objs.values())))
+        else:
+            self.list_objs = list_objs
         self.n_channels = n_channels
         self.n_classes = n_classes
         self.shuffle = shuffle
