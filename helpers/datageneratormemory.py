@@ -36,6 +36,7 @@ class DataGeneratorMemory(keras.utils.Sequence):
         self.pitchchange_sigma = pitchchange_sigma
         self.noise_sigma = noise_sigma
         self.model = Sequential()
+        self.list_objs = list_objs
         n = 10
         n_fft = 1024
         self.raw_length = n * n_fft + 2 * (2 * n) * n_fft + ((2 * n - 2) // 3) * 3 * 2 * n_fft
