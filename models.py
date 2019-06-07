@@ -182,6 +182,54 @@ class ESCConvNet(BaseModel):
         return parser
 
 
+class ConvNet(BaseModel):
+    def build(self, input_shape) -> Model:
+        print('###########', self.params)
+        m = self.create_model(**{'input_shape': input_shape, **vars(self.params)})
+        return m
+
+    def create_model(self, input_shape, nb_classes, n_filters, dropout, **kwargs):
+        model = Sequential()
+
+        dropout = list(map(float, dropout.split(",")))
+        if len(dropout) == 1:
+            dropout = dropout * 5
+        if len(dropout) != 5:
+            raise Exception("Unexpected length of dropouts:{0}".format(len(dropout)))
+        layers = [
+            Normalization2D(str_axis='batch', input_shape=input_shape),
+            Conv2D(filters=n_filters, kernel_size=(5, 8), activation='relu'),
+            MaxPool2D((2, 2), strides=(2, 2)),
+            Dropout(dropout[0]),
+            Conv2D(filters=n_filters * 2, kernel_size=(5, 8), activation='relu'),
+            MaxPool2D((2, 2), strides=(2, 2)),
+            Dropout(dropout[1]),
+            Conv2D(filters=n_filters * 2 * 2, kernel_size=(5, 7), activation='relu'),
+            MaxPool2D((2, 2), strides=(2, 2)),
+            Dropout(dropout[2]),
+            Flatten(),
+            Dense(4028, activation='relu'),
+            Dropout(dropout[3]),
+            Dense(4028, activation='relu'),
+            Dropout(dropout[4]),
+            Dense(nb_classes, activation='sigmoid')
+        ]
+        add_regularization(layers, kwargs)
+        for l in layers:
+            model.add(l)
+        return model
+
+    def get_parser(self) -> ArgumentParser:
+        parser = ArgumentParser()
+        parser.add_argument('--nb_classes', required=True, type=int)
+        parser.add_argument('--regularizer', type=str)
+        parser.add_argument('--regularizer.l', type=float)
+        parser.add_argument('--n_filters', type=int, default=100)
+        parser.add_argument('--dropout', type=str)
+
+        return parser
+
+
 class VGG16(BaseModel):
     def build(self, input_shape) -> Model:
         print('###########', self.params)
