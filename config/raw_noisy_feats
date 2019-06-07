@@ -1,0 +1,12 @@
+[core.experiments.ExtractFeatures]
+db_reader = db_reader.FnameReader
+features = features.RawAudio
+out_fname = noisy_features.h5
+h5 = True
+
+[db_reader.FnameReader]
+#label_fname = E:/kaggle/train_curated.csv
+audio_path = content/train_noisy/*.wav
+
+[features.RawAudio]
+
