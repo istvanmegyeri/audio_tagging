@@ -209,7 +209,7 @@ class RawAudio(FeatureExtractor):
         return ms, fname
 
     def read_audio(self, conf, pathname):
-        y, sr = librosa.load(pathname, sr=conf.sampling_rate)
+        y, sr = librosa.load(pathname, sr=conf.sampling_rate, dtype=np.float16)
         # trim silence
         if 0 < len(y):  # workaround: 0 length causes error
             y, _ = librosa.effects.trim(y)  # trim, top_db=default(60)

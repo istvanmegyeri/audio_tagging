@@ -253,7 +253,7 @@ class ExtractFeatures(BaseExperiment):
             n = len(keys)
             for idx, (k, v) in enumerate(zip(keys, values)):
                 print('Progress: {:.3f}'.format((idx + 1) / n), end='\r')
-                h5f.create_dataset(k, data=v)
+                h5f.create_dataset(k, data=v, dtype=v.dtype)
             print("")
             h5f.close()
         else:
