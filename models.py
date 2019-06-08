@@ -155,15 +155,15 @@ class ESCConvNet(BaseModel):
             Normalization2D(str_axis='batch', input_shape=input_shape),
             Conv2D(filters=n_filters, kernel_size=(57, 6), activation='relu'),
             MaxPool2D((4, 3), strides=(1, 3)),
-            Dropout(dropout[0]),
+            Dropout(rate=dropout[0]),
             Conv2D(filters=n_filters, kernel_size=(1, 4), activation='relu'),
             MaxPool2D((1, 3), strides=(1, 3)),
-            Dropout(dropout[1]),
+            Dropout(rate=dropout[1]),
             Flatten(),
             Dense(5000, activation='relu'),
-            Dropout(dropout[2]),
+            Dropout(rate=dropout[2]),
             Dense(5000, activation='relu'),
-            Dropout(dropout[3]),
+            Dropout(rate=dropout[3]),
             Dense(nb_classes, activation='sigmoid')
         ]
         add_regularization(layers, kwargs)
@@ -200,18 +200,18 @@ class ConvNet(BaseModel):
             Normalization2D(str_axis='batch', input_shape=input_shape),
             Conv2D(filters=n_filters, kernel_size=(5, 8), activation='relu'),
             MaxPool2D((2, 2), strides=(2, 2)),
-            Dropout(dropout[0]),
+            Dropout(rate=dropout[0]),
             Conv2D(filters=n_filters * 2, kernel_size=(5, 8), activation='relu'),
             MaxPool2D((2, 2), strides=(2, 2)),
-            Dropout(dropout[1]),
+            Dropout(rate=dropout[1]),
             Conv2D(filters=n_filters * 2 * 2, kernel_size=(5, 7), activation='relu'),
             MaxPool2D((2, 2), strides=(2, 2)),
-            Dropout(dropout[2]),
+            Dropout(rate=dropout[2]),
             Flatten(),
             Dense(4028, activation='relu'),
-            Dropout(dropout[3]),
+            Dropout(rate=dropout[3]),
             Dense(4028, activation='relu'),
-            Dropout(dropout[4]),
+            Dropout(rate=dropout[4]),
             Dense(nb_classes, activation='sigmoid')
         ]
         add_regularization(layers, kwargs)
