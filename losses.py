@@ -18,9 +18,18 @@ def focal_loss(y_true, y_pred, gamma=2, alpha=0.25):
     return K.mean(focal_cross_entropy_loss, axis=-1)
 
 
-def weighted_loss(y_true, y_pred):
+def normalized_loss(y_true, y_pred):
     cross_entropy_loss = K.binary_crossentropy(y_true, y_pred, from_logits=False)
 
     n_classes_present = K.sum(y_true, axis=1, keepdims=True)
     cross_entropy_loss = K.minimum(80 / n_classes_present * y_true, 1) * cross_entropy_loss
     return K.mean(cross_entropy_loss, axis=-1)
+
+
+def weighted_loss(y_true, y_pred, weight=2):
+    bc = K.binary_crossentropy(y_true, y_pred)
+    loss = (y_true * weight + 1) * bc
+    # + 0 * K.sum(K.print_tensor(K.cast(K.shape(bc), 'float32'), "bc_shape:"))
+    # loss = loss + 0 * K.sum(K.print_tensor(K.cast(K.shape(bc), 'float32'), "loss_shape:"))
+    loss = K.mean(loss, axis=-1)
+    return loss

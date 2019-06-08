@@ -6,7 +6,7 @@ from keras.models import Model
 import sys, logging
 import keras
 import numpy as np
-from sklearn.metrics import label_ranking_average_precision_score
+from sklearn.metrics import label_ranking_average_precision_score, average_precision_score
 
 
 class DataSetMetric():
@@ -36,9 +36,16 @@ class MultiClassMetrics(keras.callbacks.Callback, DataSetMetric):
 
         self._data.append({
             'val_LRAP': label_ranking_average_precision_score(self.y_val, y_val_predict),
-            'LRAP': label_ranking_average_precision_score(self.y_train, y_train_predict)
+            'val_AP': average_precision_score(self.y_val, y_val_predict),
+            'LRAP': label_ranking_average_precision_score(self.y_train, y_train_predict),
+            'AP': average_precision_score(self.y_train, y_train_predict)
         })
         print("\n", self._data[-1])
+        print(np.mean(self.x_train[0]))
+        print(np.argwhere(self.y_train[0] == 1),
+              np.argwhere(y_train_predict[0] == np.max(y_train_predict[0])), np.max(y_train_predict[0]))
+        print(np.argwhere(self.y_val[0] == 1),
+              np.argwhere(y_val_predict[0] == np.max(y_val_predict[0])), np.max(y_val_predict[0]))
         return
 
     def get_data(self):
