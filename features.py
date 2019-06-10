@@ -199,7 +199,7 @@ class RawAudio(FeatureExtractor):
         for r in results:
             ms, fname = r.result()
             # 16-bit PCM -32768 +32767 int16
-            output[fname] = (ms * 32767).astype(np.int16)
+            output[fname] = ms.astype(np.float16)
         print("")
 
     def extract_single(self, t0, FLAGS, path, fname, i, n):

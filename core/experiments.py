@@ -287,8 +287,9 @@ class ExtractFeatures(BaseExperiment):
             print("save file")
             h5f = h5py.File(FLAGS.out_fname, 'w')
             n = len(keys)
+            t0 = time.time()
             for idx, (k, v) in enumerate(zip(keys, values)):
-                print('Progress: {:.3f}'.format((idx + 1) / n), end='\r')
+                util.print_progress(t0, idx, n)
                 h5f.create_dataset(k, data=v, dtype=v.dtype)
             print("")
             h5f.close()
