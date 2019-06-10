@@ -10,6 +10,7 @@ from time import time
 from concurrent.futures import ProcessPoolExecutor
 import scipy
 from helpers.augmenter import change_speed, change_pitch
+from core import util
 
 
 class FileSize(FeatureExtractor):
@@ -42,9 +43,10 @@ class Duration(FeatureExtractor):
         df = self.get_df(ds)
         n = df.shape[0]
         feature_name = self.get_name()
+        t0 = time()
         for idx, row in df.iterrows():
             fname = row['fname']
-            print('Progress: {:.3f}'.format((idx + 1) / n), end='\r')
+            util.print_progress(t0, idx, n)
             stats = output.get(fname, {'fname': fname})
             stats[feature_name] = librosa.core.get_duration(filename=row['path'])
             output[fname] = stats
@@ -117,10 +119,7 @@ class MelSpectogramm(FeatureExtractor):
         print("")
 
     def extract_single(self, t0, FLAGS, path, fname, i, n):
-        progress = i / n
-        ellapsed_time = (time() - t0) / 60
-        print("Progress: {:.3f} Time left: {:.1f} min".format(progress, (1 - progress) / progress * ellapsed_time),
-              end='\r')
+        util.print_progress(t0, i, n)
         ms = self.read_as_melspectrogram(FLAGS, path, True)
         return ms, fname
 
@@ -204,10 +203,7 @@ class RawAudio(FeatureExtractor):
         print("")
 
     def extract_single(self, t0, FLAGS, path, fname, i, n):
-        progress = i / n
-        ellapsed_time = (time() - t0) / 60
-        print("Progress: {:.3f} Time left: {:.1f} min".format(progress, (1 - progress) / progress * ellapsed_time),
-              end='\r')
+        util.print_progress(t0, i, n)
         ms = self.read_audio(FLAGS, path)
         return ms, fname
 
