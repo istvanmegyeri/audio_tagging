@@ -66,23 +66,23 @@ class EvaluateModel(BaseExperiment):
         while datasets.has_next():
             ds = datasets.next()
             while models.has_next():
-                # config = tf.ConfigProto(intra_op_parallelism_threads=1,
-                #                       inter_op_parallelism_threads=1)
-                # sess = tf.Session(config=config)
+                config = tf.ConfigProto(intra_op_parallelism_threads=1,
+                                        inter_op_parallelism_threads=1)
+                sess = tf.Session(config=config)
 
-                # with sess.as_default():
-                model_holder = models.next()
-                model = model_holder.get_model()
-                if ds.is_generator():
-                    probs = model.predict_generator(ds.get_test(), verbose=1)
-                else:
-                    probs = model.predict(ds.get_test(), verbose=1)
-                preds += [probs]
-                if y is not None:
-                    results += [{'AP': average_precision_score(y, probs),
-                                 'LRAP': label_ranking_average_precision_score(y, probs),
-                                 'm_name': model_holder.get_path()}]
-                    print(results[-1])
+                with sess.as_default():
+                    model_holder = models.next()
+                    model = model_holder.get_model()
+                    if ds.is_generator():
+                        probs = model.predict_generator(ds.get_test(), verbose=1)
+                    else:
+                        probs = model.predict(ds.get_test(), verbose=1)
+                    preds += [probs]
+                    if y is not None:
+                        results += [{'AP': average_precision_score(y, probs),
+                                     'LRAP': label_ranking_average_precision_score(y, probs),
+                                     'm_name': model_holder.get_path()}]
+                        print(results[-1])
             models.reset()
 
         preds = np.array(preds)
