@@ -18,6 +18,8 @@ import cProfile
 from core.metrics import DataSetMetric
 import matplotlib.pyplot as plt
 import h5py
+import glob
+from sklearn.metrics import label_ranking_average_precision_score, average_precision_score
 
 
 class EvaluateModel(BaseExperiment):
@@ -28,13 +30,27 @@ class EvaluateModel(BaseExperiment):
                             type=str, required=True)
         parser.add_argument('--models',
                             type=str, required=True)
-        parser.add_argument('--metrics',
-                            type=str, required=True)
         parser.add_argument('--fname',
+                            type=str, required=True)
+        parser.add_argument('--stats_fname',
+                            type=str)
+        parser.add_argument('--label_fname',
+                            type=str, required=True)
+        parser.add_argument('--labels',
+                            type=str)
+        parser.add_argument('--path',
                             type=str, required=True)
         parser.add_argument('--append',
                             action='store_true')
         return parser
+
+    def get_unique_labels(self):
+        FLAGS = self.params
+        label_df = pd.read_csv(FLAGS.label_fname)
+        labels = label_df['labels'].str.split(',', expand=True).fillna("")
+        unique_labels = np.unique(labels.values)
+        unique_labels = unique_labels[unique_labels != ""]
+        return unique_labels
 
     def run(self):
         # logging.disable(logging.INFO)
@@ -42,38 +58,58 @@ class EvaluateModel(BaseExperiment):
         FLAGS = self.params
         datasets = SectionCloner(FLAGS.datasets, self.config, self.args)
         models = SectionCloner(FLAGS.models, self.config, self.args)
-        metrics = SectionCloner(FLAGS.metrics, self.config, self.args)
-        result = []
-        while datasets.has_next() and models.has_next():
-            # config = tf.ConfigProto(intra_op_parallelism_threads=1,
-            #                       inter_op_parallelism_threads=1)
-            # sess = tf.Session(config=config)
-
-            # with sess.as_default():
+        preds = []
+        results = []
+        y = None
+        if FLAGS.labels is not None:
+            y = np.load(FLAGS.labels)['arr_0']
+        while datasets.has_next():
             ds = datasets.next()
-            model_holder = models.next()
-            model = model_holder.get_model()
-            metrics.reset()
-            while metrics.has_next():
-                metric = metrics.next()
-                stats = metric.get_values(model, ds)
-                stats['m_name'] = str(model_holder.get_path())
-                stats['metric_name'] = str(metric.get_name())
-                x_test, y_test = ds.get_test()
-                score = model.evaluate(x_test, y_test, verbose=0)
-                stats['acc'] = score[1]
-                stats['loss'] = score[0]
+            while models.has_next():
+                # config = tf.ConfigProto(intra_op_parallelism_threads=1,
+                #                       inter_op_parallelism_threads=1)
+                # sess = tf.Session(config=config)
 
-                result = result + [stats]
-        df = pd.DataFrame(result)
+                # with sess.as_default():
+                model_holder = models.next()
+                model = model_holder.get_model()
+                if ds.is_generator():
+                    probs = model.predict_generator(ds.get_test(), verbose=1)
+                else:
+                    probs = model.predict(ds.get_test(), verbose=1)
+                preds += [probs]
+                if y is not None:
+                    results += [{'AP': average_precision_score(y, probs),
+                                 'LRAP': label_ranking_average_precision_score(y, probs),
+                                 'm_name': model_holder.get_path()}]
+                    print(results[-1])
+            models.reset()
+
+        preds = np.array(preds)
+        print(preds.shape)
+        final_pred = np.mean(preds, axis=0)
+        if y is not None:
+            results += [{'AP': average_precision_score(y, final_pred),
+                         'LRAP': label_ranking_average_precision_score(y, final_pred),
+                         'm_name': 'final_pred'}]
+            print(results[-1])
+            if FLAGS.stats_fname:
+                df = pd.DataFrame(results)
+                if FLAGS.append:
+                    header = not os.path.exists(FLAGS.stats_fname)
+                    with open(FLAGS.stats_fname, 'a') as f:
+                        df.to_csv(f, index=False, header=header, sep=';')
+                else:
+                    df.to_csv(FLAGS.stats_fname, index=False, sep=';')
+
+        unique_labels = self.get_unique_labels()
+        df = pd.DataFrame(final_pred, columns=unique_labels)
+        # add fname column
+        df['fname'] = list(map(os.path.basename, glob.glob(FLAGS.path)))
+
         self._logger.info(df)
         util.mk_parent_dir(FLAGS.fname)
-        if FLAGS.append:
-            header = not os.path.exists(FLAGS.fname)
-            with open(FLAGS.fname, 'a') as f:
-                df.to_csv(f, index=False, header=header)
-        else:
-            df.to_csv(FLAGS.fname, index=False, sep=';')
+        df.to_csv(FLAGS.fname, index=False, sep=',')
 
 
 class TrainModel(BaseExperiment):

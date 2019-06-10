@@ -21,11 +21,15 @@ class DataGeneratorMemory(keras.utils.Sequence):
 
     def __init__(self, list_objs, labels, batch_size=32,
                  dim=(60, 77), n_channels=1,
-                 n_classes=80, shuffle=True, speedchange_sigma=2.0, pitchchange_sigma=3.0,
+                 n_classes=80, shuffle=True, mixing=True, speedchange_sigma=2.0, pitchchange_sigma=3.0,
                  noise_sigma=0.001):
         self.dim = dim
-        self.batch_size = batch_size
-        self.inner_batch_size = self.batch_size * 2
+        self.batch_size = batch_size // 2 * 2
+        self.mixing = mixing
+        if mixing:
+            self.inner_batch_size = self.batch_size * 2
+        else:
+            self.inner_batch_size = self.batch_size
         self.labels = labels
         self.n_channels = n_channels
         self.n_classes = n_classes
@@ -95,8 +99,8 @@ class DataGeneratorMemory(keras.utils.Sequence):
         # Generate indexes of the batch
         indexes = self.indexes[index * self.inner_batch_size:(index + 1) * self.inner_batch_size]
         # Generate data
-        X, y = self.__data_generation(indexes)
-        return X, y
+        # X, y = self.__data_generation(indexes)
+        return self.__data_generation(indexes)
 
     def on_epoch_end(self):
         'Updates indexes after each epoch'
@@ -125,33 +129,47 @@ class DataGeneratorMemory(keras.utils.Sequence):
         X = np.empty((self.batch_size, self.dim[0], self.compressed_size, self.n_channels))
         Y = np.zeros((self.batch_size, self.n_classes), dtype=np.float32)
         sr = 22050
-        for i in range(self.batch_size):
+        for i in range(self.batch_size if self.mixing else self.batch_size // 2):
             signal1 = self.list_objs[indexes[i * 2]].astype(np.float32) / 32767
             signal2 = self.list_objs[indexes[i * 2 + 1]].astype(np.float32) / 32767
             # augment
             signal1 = self.augment(signal1, sr, verbose=0)
             signal2 = self.augment(signal2, sr, verbose=0)
 
-            r1 = np.random.uniform(0.0, 1.0, 1)
-            r2 = np.random.uniform(0.0, 1.0, 1)
-            signal = combine(signal1, signal2, r1, r2)
-            # signal = np.expand_dims(signal, axis=0)
-            # signal = np.expand_dims(signal, axis=1)
-            x = librosa.stft(signal, n_fft=self.n_fft, hop_length=self.hop_length, center=False)
-            mels = self.audio_to_melspectrogram(x)
-            # a = self.model.predict(signal)
-            a = mels
-            cD = np.dot(a[:, :self.compressible_cols], self.comp_mat)
-            cD = np.expand_dims(cD, axis=2)
-            X[i,] = cD
-            # Store class
-            # @TODO: handle same class
-            # print(self.labels[indexes[i * 2]])
-            # print(Y[i, self.labels[indexes[i * 2]]])
-            Y[i, self.labels[indexes[i * 2]]] = r1 * 1.0
-            # print(Y[i, self.labels[indexes[i * 2]]])
-            Y[i, self.labels[indexes[i * 2 + 1]]] = r2 * 1.0
-        return X, Y
+            if self.mixing:
+                r1 = np.random.uniform(0.0, 1.0, 1)
+                r2 = np.random.uniform(0.0, 1.0, 1)
+                signal = combine(signal1, signal2, r1, r2)
+                # signal = np.expand_dims(signal, axis=0)
+                # signal = np.expand_dims(signal, axis=1)
+                X[i,] = self.extract_feature(signal)
+                if self.labels is not None:
+                    # Store class
+                    # @TODO: handle same class
+                    Y[i, self.labels[indexes[i * 2]]] = r1 * 1.0
+                    # print(Y[i, self.labels[indexes[i * 2]]])
+                    Y[i, self.labels[indexes[i * 2 + 1]]] = r2 * 1.0
+            else:
+                X[i * 2,] = self.extract_feature(signal1)
+                X[i * 2 + 1,] = self.extract_feature(signal2)
+                if self.labels is not None:
+                    Y[i * 2, self.labels[indexes[i * 2]]] = 1.0
+                    Y[i * 2 + 1, self.labels[indexes[i * 2 + 1]]] = 1.0
+
+        if self.labels is None:
+            return X
+        else:
+            return X, Y
+
+    def extract_feature(self, signal):
+        # signal = np.expand_dims(signal, axis=0)
+        # signal = np.expand_dims(signal, axis=1)
+        x = librosa.stft(signal, n_fft=self.n_fft, hop_length=self.hop_length, center=False)
+        mels = self.audio_to_melspectrogram(x)
+        a = mels
+        cD = np.dot(a[:, :self.compressible_cols], self.comp_mat)
+        cD = np.expand_dims(cD, axis=2)
+        return cD
 
     def audio_to_melspectrogram(self, spect):
         spectrogram = librosa.feature.melspectrogram(S=spect,

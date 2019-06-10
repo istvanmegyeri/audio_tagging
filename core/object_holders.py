@@ -8,6 +8,8 @@ from core import util
 from abc import abstractmethod
 import numpy as np
 import sys, logging, os
+import kapre
+import losses
 
 
 class SectionCloner(ParserAble):
@@ -72,7 +74,7 @@ class SectionCloner(ParserAble):
         parser.add_argument('--sections',
                             type=str, required=True)
         parser.add_argument('--attrs',
-                            type=str, default="")
+                            type=str)
         return parser
 
 
@@ -97,7 +99,10 @@ class KerasModelLoader(ModelLoader):
         return parser
 
     def get_model(self) -> Model:
-        m = keras.models.load_model(self.params.filepath)
+        m = keras.models.load_model(self.params.filepath, custom_objects={
+            'Normalization2D': kapre.utils.Normalization2D,
+            'weighted_loss': losses.weighted_loss
+        })
         return m
 
     def get_path(self):

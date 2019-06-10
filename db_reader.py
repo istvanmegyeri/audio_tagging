@@ -274,4 +274,55 @@ class RawData(DataSet):
         parser.add_argument('--speedchange_sigma', type=float)
         parser.add_argument('--pitchchange_sigma', type=float)
         parser.add_argument('--noise_sigma', type=float)
+        parser.add_argument('--mixing', action='store_true')
+        return parser
+
+
+class RawTestData(DataSet):
+    def __init__(self, config: configparser.ConfigParser, args) -> None:
+        super().__init__(config, args, True)
+        FLAGS = self.params
+        self.x_test = np.load(FLAGS.features)['arr_0']
+
+        print("RawData: data is loaded")
+        generator_params = {'batch_size': FLAGS.batch_size}
+        if FLAGS.generator_params is not None:
+            traingenerator_params = {**generator_params, **self.get_generator_params(FLAGS.generator_params)}
+        self.dg = DataGeneratorMemory(self.x_test, None, shuffle=False, **traingenerator_params)
+
+    def get_train(self):
+        return None
+
+    def get_test(self):
+        return self.dg
+
+    def get_shape(self):
+        return (60, 77, 1)
+
+    def get_train_size(self) -> int:
+        return 0
+
+    def get_test_size(self) -> int:
+        return len(self.x_test)
+
+    def get_parser(self) -> ArgumentParser:
+        parser = ArgumentParser(description='RawTestData')
+        parser.add_argument('--batch_size',
+                            type=int, default=32)
+        parser.add_argument('--features',
+                            type=str, required=True)
+        parser.add_argument('--generator_params',
+                            type=str, required=True)
+        return parser
+
+    def get_generator_params(self, sec_name):
+        generator_params = self.get_generator_parser().parse_args(self.get_sec_params(sec_name))
+        return vars(generator_params)
+
+    def get_generator_parser(self) -> ArgumentParser:
+        parser = ArgumentParser(description='Generator')
+        parser.add_argument('--speedchange_sigma', type=float)
+        parser.add_argument('--pitchchange_sigma', type=float)
+        parser.add_argument('--noise_sigma', type=float)
+        parser.add_argument('--mixing', action='store_true')
         return parser
