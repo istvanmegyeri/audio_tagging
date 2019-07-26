@@ -1,0 +1,19 @@
+I:
+* First Submission
+** create a submission notebook
+** ENV-net, validated on noisy dataset
+
+II:
+* ENV-net
+* data augmentation
+* test context for 1s frames
+
+
+III:
+* Augmentation based on Between Class paper
+* class occurence matrix
+
+IV:
+* handle nosy dataset
+* class weight(using corruption mtx)
+* sampleweight
